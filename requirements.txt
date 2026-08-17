@@ -5,7 +5,7 @@
 #     pip install -r requirements.txt
 
 # Core scientific stack
-numpy>=1.26
+numpy>=1.26S
 pandas>=2.0
 scipy>=1.11
 matplotlib>=3.8
@@ -14,6 +14,7 @@ statsmodels>=0.14
 
 # Data formats
 pyarrow>=15.0
+openpyxl>=3.1
 
 # Power system modelling
 pypsa>=0.28

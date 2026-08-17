@@ -1,0 +1,95 @@
+(.venv) PS C:\Users\michaela.lelova\hodor\hodor_dp> python test_gurobi.py
+PyPSA version: 1.2.4
+
+Solving with Gurobi...
+C:\Users\michaela.lelova\hodor\hodor_dp\test_gurobi.py:48: FutureWarning: The default value of `include_objective_constant` will change from True to False in version 2.0. Set `include_objective_constant` explicitly to suppress this warning. Using False improves LP numerical conditioning by not including the objective constant as a variable.
+  status, condition = n.optimize(
+WARNING:pypsa.consistency:The following buses have carriers which are not defined. Run n.sanitize() to add them. Components with undefined carriers:
+Index(['DE'], dtype='object', name='name')
+INFO:linopy.model: Solve problem using Gurobi solver
+INFO:linopy.io: Writing time: 0.1s
+Restricted license - for non-production use only - expires 2027-11-29
+INFO:gurobipy:Restricted license - for non-production use only - expires 2027-11-29
+Read LP format model from file C:\Users\michaela.lelova\AppData\Local\Temp\linopy-problem-u5ce7_8c.lp
+INFO:gurobipy:Read LP format model from file C:\Users\michaela.lelova\AppData\Local\Temp\linopy-problem-u5ce7_8c.lp
+Reading time = 0.00 seconds
+INFO:gurobipy:Reading time = 0.00 seconds
+obj: 120 rows, 48 columns, 144 nonzeros
+INFO:gurobipy:obj: 120 rows, 48 columns, 144 nonzeros
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (win64 - Windows 11+.0 (26200.2))
+INFO:gurobipy:Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (win64 - Windows 11+.0 (26200.2))
+
+INFO:gurobipy:
+CPU model: 13th Gen Intel(R) Core(TM) i7-1365U, instruction set [SSE2|AVX|AVX2]
+INFO:gurobipy:CPU model: 13th Gen Intel(R) Core(TM) i7-1365U, instruction set [SSE2|AVX|AVX2]
+Thread count: 10 physical cores, 12 logical processors, using up to 12 threads
+INFO:gurobipy:Thread count: 10 physical cores, 12 logical processors, using up to 12 threads
+
+INFO:gurobipy:
+Optimize a model with 120 rows, 48 columns and 144 nonzeros (Min)
+INFO:gurobipy:Optimize a model with 120 rows, 48 columns and 144 nonzeros (Min)
+Model fingerprint: 0x1dd9a16e
+INFO:gurobipy:Model fingerprint: 0x1dd9a16e
+Model has 48 linear objective coefficients
+INFO:gurobipy:Model has 48 linear objective coefficients
+Coefficient statistics:
+INFO:gurobipy:Coefficient statistics:
+  Matrix range     [1e+00, 1e+00]
+INFO:gurobipy:  Matrix range     [1e+00, 1e+00]
+  Objective range  [2e+01, 8e+01]
+INFO:gurobipy:  Objective range  [2e+01, 8e+01]
+  Bounds range     [0e+00, 0e+00]
+INFO:gurobipy:  Bounds range     [0e+00, 0e+00]
+  RHS range        [5e+01, 1e+02]
+INFO:gurobipy:  RHS range        [5e+01, 1e+02]
+
+INFO:gurobipy:
+Presolve removed 120 rows and 48 columns
+INFO:gurobipy:Presolve removed 120 rows and 48 columns
+Presolve time: 0.02s
+INFO:gurobipy:Presolve time: 0.02s
+Presolve: All rows and columns removed
+INFO:gurobipy:Presolve: All rows and columns removed
+Iteration    Objective       Primal Inf.    Dual Inf.      Time
+INFO:gurobipy:Iteration    Objective       Primal Inf.    Dual Inf.      Time
+       0    6.2400000e+04   0.000000e+00   0.000000e+00      0s
+INFO:gurobipy:       0    6.2400000e+04   0.000000e+00   0.000000e+00      0s
+
+INFO:gurobipy:
+Solved in 0 iterations and 0.03 seconds (0.00 work units)
+INFO:gurobipy:Solved in 0 iterations and 0.03 seconds (0.00 work units)
+Optimal objective  6.240000000e+04
+INFO:gurobipy:Optimal objective  6.240000000e+04
+INFO:linopy.constants: Optimization successful: 
+Status: ok
+Termination condition: optimal
+Solution: 48 primals, 120 duals
+Objective: 6.24e+04
+Solver: gurobi
+Runtime: 0.03s
+Dual bound: 6.24e+04
+Solver model: available
+Solver message: 2
+
+INFO:pypsa.optimization.optimize:The shadow-prices of the constraints Generator-fix-p-lower, Generator-fix-p-upper were not assigned to the network.
+
+Status: ok
+Condition: optimal
+
+Generator dispatch:
+name                 cheap_generator  expensive_generator
+snapshot                                                 
+2026-01-01 00:00:00             50.0                 20.0
+2026-01-01 01:00:00             50.0                 20.0
+2026-01-01 02:00:00             50.0                 20.0
+2026-01-01 03:00:00             50.0                 20.0
+2026-01-01 04:00:00             50.0                 20.0
+
+Electricity price:
+name                   DE
+snapshot                 
+2026-01-01 00:00:00  80.0
+2026-01-01 01:00:00  80.0
+2026-01-01 02:00:00  80.0
+2026-01-01 03:00:00  80.0
+2026-01-01 04:00:00  80.0
