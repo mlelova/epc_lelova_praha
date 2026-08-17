@@ -1,0 +1,25 @@
+# Python 3.10+ required.
+# Install with:
+#     python3 -m venv venv
+#     source venv/bin/activate
+#     pip install -r requirements.txt
+
+# Core scientific stack
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+statsmodels>=0.14
+
+# Data formats
+pyarrow>=15.0
+
+# Power system modelling
+pypsa>=0.28
+
+# Solver (academic license required — see USER_GUIDE.md)
+gurobipy>=11.0
+
+# Notebook interface
+jupyterlab>=4.0
