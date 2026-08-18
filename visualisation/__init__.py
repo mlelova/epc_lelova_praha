@@ -1,4 +1,4 @@
-"""Interactive dashboards for solved PyPSA networks."""
+from .visualisation import visualize_data
 
 from .visualisation import DashboardError, generate_dashboard
 
