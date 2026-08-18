@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>__DASHBOARD_TITLE__</title>
+  <style>
+    :root {
+      --bg:#0a0e14;--panel:#11161f;--panel2:#0d121a;--line:#1e2733;
+      --ink:#e6edf3;--muted:#7d8aa0;--faint:#4a5568;--grid:#192230;
+      --cy:#5ac8fa;--am:#ffb020;--gr:#9ad36a;--pk:#e0567a;--pu:#c08af7;
+      --teal:#4bb3a8;--zero:#2a3850;--shadow:rgba(0,0,0,.45);
+      --mono:ui-monospace,"SFMono-Regular","Cascadia Code",Menlo,monospace;
+      --sans:Inter,-apple-system,"Segoe UI",system-ui,sans-serif;
+    }
+    html[data-theme="light"] {
+      --bg:#f4f6f9;--panel:#fff;--panel2:#eef1f5;--line:#d8dee6;
+      --ink:#16202e;--muted:#586577;--faint:#8b97a6;--grid:#e7ebf0;
+      --cy:#0b7fc4;--am:#c47a00;--gr:#2f9e44;--pk:#d6336c;
+      --pu:#7048e8;--teal:#168f85;--zero:#b8c0cc;--shadow:rgba(20,30,50,.16);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--sans);-webkit-font-smoothing:antialiased}
+    button,select,input{font:inherit}
+    .wrap{max-width:1220px;margin:0 auto;padding:22px 20px 64px}
+    header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+    h1{font-size:20px;line-height:1.2;margin:0;font-weight:680;letter-spacing:-.015em}
+    .sub{color:var(--muted);font-size:12px;margin-top:5px}
+    .head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .badge{font:10.5px/1.65 var(--mono);color:var(--muted);text-align:right}
+    .badge b{color:var(--gr)}
+    .theme-btn,.nav-btn{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:5px 11px;font:11px var(--mono);cursor:pointer}
+    .theme-btn:hover,.nav-btn:hover{color:var(--ink);border-color:var(--cy)}
+    .controls{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px 14px;margin:16px 0 0}
+    .control{display:flex;align-items:center;gap:8px}
+    .label,.tag{font:10px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}
+    select{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font:12px var(--mono);min-width:150px}
+    .tabs{display:flex;gap:2px;margin:15px 0 4px;border-bottom:1px solid var(--line);overflow-x:auto}
+    .tab{white-space:nowrap;background:none;border:0;color:var(--muted);padding:10px 16px;cursor:pointer;font-weight:550;border-bottom:2px solid transparent;margin-bottom:-1px}
+    .tab:hover{color:var(--ink)}.tab.on{color:var(--ink);border-bottom-color:var(--cy)}
+    .page{display:none;animation:fade .18s ease}.page.on{display:block}
+    @keyframes fade{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:none}}
+    .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:15px 0}
+    .metric{min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:11px 13px}
+    .metric .k{font:9.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .metric .v{font:650 20px var(--mono);letter-spacing:-.02em;margin-top:3px;white-space:nowrap}
+    .metric .u{font-size:10px;color:var(--faint);font-weight:400}.metric .d{font:10.5px var(--mono);color:var(--muted);margin-top:2px;min-height:15px}
+    .cy{color:var(--cy)}.am{color:var(--am)}.gr{color:var(--gr)}.pk{color:var(--pk)}.pu{color:var(--pu)}
+    .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:16px}
+    .grid.wide{grid-template-columns:minmax(0,1.6fr) minmax(280px,.7fr)}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+    .panel h2{font-size:12.5px;font-weight:620;margin:0 0 2px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+    .panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+    .panel-head .tag{margin:0}.tag{margin:0 0 10px}
+    .chart{position:relative;width:100%;min-height:220px}.chart svg{display:block;width:100%;height:auto;overflow:visible}
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font:11px var(--mono);color:var(--muted)}
+    .legend span{display:inline-flex;align-items:center;gap:6px}.swatch{width:14px;height:3px;border-radius:2px;display:inline-block}.dash{height:0;border-top:2px dashed currentColor}
+    .timeline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 6px}
+    .segments{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+    .segments button{border:0;background:none;color:var(--muted);padding:5px 10px;font:11px var(--mono);cursor:pointer}
+    .segments button.on{background:var(--cy);color:#fff;font-weight:650}
+    input[type=range]{flex:1;min-width:120px;accent-color:var(--am)}
+    .note{font-size:11.5px;color:var(--muted);line-height:1.65;margin-top:10px}.note b{color:var(--ink)}
+    .empty{display:none;border:1px dashed var(--line);border-radius:9px;padding:26px;color:var(--muted);text-align:center;margin:15px 0}
+    table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}
+    th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+    th{font:9.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--faint);font-weight:500}
+    td{color:var(--muted)}td.num{text-align:right;font-family:var(--mono);color:var(--ink)}
+    .table-wrap{overflow-x:auto}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+    .tip{position:fixed;z-index:1000;pointer-events:none;opacity:0;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:7px 10px;box-shadow:0 8px 24px var(--shadow);font:11px/1.55 var(--mono);max-width:330px;transition:opacity .06s}
+    .tip.on{opacity:1}.tip .tip-title{color:var(--faint);font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}.tip .tip-row{display:flex;justify-content:space-between;gap:18px}.tip .tip-row b{font-weight:550}
+    .info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--line);color:var(--muted);font:600 10px var(--mono);cursor:help}
+    .section-note{border-left:2px solid var(--cy);padding:7px 10px;background:var(--panel2);border-radius:0 6px 6px 0}
+    footer{margin-top:28px;padding-top:15px;border-top:1px solid var(--line);font:10px/1.7 var(--mono);color:var(--faint)}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.grid,.grid.wide{grid-template-columns:1fr}.badge{text-align:left}}
+    @media(max-width:540px){.wrap{padding:14px 11px 45px}.metrics{grid-template-columns:1fr 1fr}.metric .v{font-size:17px}.tab{padding:9px 11px}.panel{padding:12px}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="title">__DASHBOARD_TITLE__</h1>
+      <div class="sub">Solved PyPSA results · prices, spreads, battery operation, supply and cross-border flows</div>
+    </div>
+    <div class="head-actions">
+      <button class="theme-btn" id="themeBtn">◐ Light mode</button>
+      <div class="badge" id="badge"></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="control"><span class="label">Bidding zone</span><select id="zoneSelect"></select></div>
+    <div class="control"><span class="label">Period</span><span id="periodLabel"></span></div>
+  </div>
+
+  <nav class="tabs" id="tabs" aria-label="Dashboard sections">
+    <button class="tab on" data-page="overview">Overview</button>
+    <button class="tab" data-page="prices">Prices &amp; spreads</button>
+    <button class="tab" data-page="battery">Battery</button>
+    <button class="tab" data-page="supply">Supply &amp; flows</button>
+  </nav>
+
+  <section class="page on" id="page-overview">
+    <div class="metrics" id="overviewMetrics"></div>
+    <div class="panel">
+      <div class="panel-head"><h2>Hourly price and battery dispatch <span class="info" data-help="Positive battery dispatch supplies the grid; negative dispatch charges from the grid. Prices and dispatch are solved model outputs.">i</span></h2><div class="tag" id="overviewWindow"></div></div>
+      <div class="timeline" data-timeline="overview">
+        <span class="label">Zoom</span><div class="segments"><button data-span="24">Day</button><button data-span="168" class="on">Week</button><button data-span="720">Month</button><button data-span="0">Year</button></div>
+        <button class="nav-btn" data-action="prev">◀ back</button><input type="range" min="0" value="0"><button class="nav-btn" data-action="next">fwd ▶</button>
+      </div>
+      <div class="chart" id="overviewHourly"></div><div class="legend" id="overviewHourlyLegend"></div>
+    </div>
+    <div class="grid">
+      <div class="panel"><h2>Average day shape</h2><div class="tag">price (€/MWh) and residual load (GW) by hour</div><div class="chart" id="overviewDay"></div><div class="legend" id="overviewDayLegend"></div></div>
+      <div class="panel"><h2>Monthly price structure</h2><div class="tag">average price and mean daily high–low spread</div><div class="chart" id="overviewMonthly"></div><div class="legend" id="overviewMonthlyLegend"></div></div>
+    </div>
+    <div class="note section-note">All figures are calculated from the selected solved network. No external forecasts or synthetic battery additions are applied.</div>
+  </section>
+
+  <section class="page" id="page-prices">
+    <div class="metrics" id="priceMetrics"></div>
+    <div class="grid">
+      <div class="panel"><h2>Price duration curve</h2><div class="tag">hourly prices ranked from highest to lowest</div><div class="chart" id="priceDuration"></div></div>
+      <div class="panel"><h2>Monthly daily spread</h2><div class="tag">mean daily maximum minus minimum · €/MWh</div><div class="chart" id="priceMonthlySpread"></div></div>
+    </div>
+    <div class="grid">
+      <div class="panel"><h2>TB1 / TB2 / TB4 arbitrage spread <span class="info" data-help="For each day, TBn is the mean of the n highest prices minus the mean of the n lowest prices. Gross value is n × TBn, before efficiency, availability, cycling limits and fees.">i</span></h2><div class="tag">average daily top-n minus bottom-n price · €/MWh</div><div class="chart" id="tbSpread"></div><div class="note" id="tbNote"></div></div>
+      <div class="panel"><h2>Price vs residual load</h2><div class="tag">sampled hours · residual load = demand − wind − solar</div><div class="chart" id="priceScatter"></div><div class="note" id="regressionNote"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-battery">
+    <div class="empty" id="batteryEmpty">No battery storage unit is connected to this bidding zone in the solved network.</div>
+    <div id="batteryContent">
+      <div class="metrics" id="batteryMetrics"></div>
+      <div class="panel">
+        <div class="panel-head"><h2>Hourly dispatch and state of charge <span class="info" data-help="Dispatch is measured at the grid connection: positive means discharging, negative means charging. State of charge is aggregated and divided by nameplate energy capacity.">i</span></h2><div class="tag" id="batteryWindow"></div></div>
+        <div class="timeline" data-timeline="battery">
+          <span class="label">Zoom</span><div class="segments"><button data-span="24">Day</button><button data-span="168" class="on">Week</button><button data-span="720">Month</button><button data-span="0">Year</button></div>
+          <button class="nav-btn" data-action="prev">◀ back</button><input type="range" min="0" value="0"><button class="nav-btn" data-action="next">fwd ▶</button>
+        </div>
+        <div class="chart" id="batteryHourly"></div><div class="legend" id="batteryHourlyLegend"></div>
+      </div>
+      <div class="grid">
+        <div class="panel"><h2>Average battery day</h2><div class="tag">charge, discharge and state of charge by hour</div><div class="chart" id="batteryDay"></div><div class="legend" id="batteryDayLegend"></div></div>
+        <div class="panel"><h2>Monthly gross dispatch margin</h2><div class="tag">model price × grid-side battery dispatch · €m</div><div class="chart" id="batteryRevenue"></div></div>
+      </div>
+      <div class="panel" style="margin-top:16px"><h2>Operational economics</h2><div class="tag">realized solved dispatch · gross wholesale value</div><div class="table-wrap"><table id="batteryTable"></table></div><div class="note">Equivalent cycles = discharged AC energy ÷ nameplate energy capacity. Gross margin excludes capital cost, fixed O&amp;M, degradation, grid fees and ancillary-market revenue.</div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-supply">
+    <div class="metrics" id="supplyMetrics"></div>
+    <div class="grid">
+      <div class="panel"><h2>Generation by carrier</h2><div class="tag">weighted energy · TWh</div><div class="chart" id="generationEnergy"></div></div>
+      <div class="panel"><h2>Installed capacity by carrier</h2><div class="tag">optimized or fixed nameplate capacity · GW</div><div class="chart" id="generationCapacity"></div></div>
+    </div>
+    <div class="grid wide">
+      <div class="panel"><h2>Average generation day</h2><div class="tag">largest carriers and demand · GW by hour</div><div class="chart" id="generationDay"></div><div class="legend" id="generationDayLegend"></div></div>
+      <div class="panel"><h2>Cross-border exchanges</h2><div class="tag">gross imports and exports by neighboring zone · TWh</div><div class="chart" id="flowBars"></div><div class="note">Flows use each link terminal’s solved injection, so receiving-side losses are reflected.</div></div>
+    </div>
+    <div class="panel" style="margin-top:16px"><h2>Carrier detail</h2><div class="table-wrap"><table id="generationTable"></table></div></div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+<div class="tip" id="tip"></div>
+<script type="application/json" id="dashboard-data">__DASHBOARD_DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const D = JSON.parse(document.getElementById("dashboard-data").textContent);
+  const $ = s => document.querySelector(s);
+  const $$ = s => [...document.querySelectorAll(s)];
+  const C = {cy:"var(--cy)",am:"var(--am)",gr:"var(--gr)",pk:"var(--pk)",pu:"var(--pu)",teal:"var(--teal)",mut:"var(--muted)",ink:"var(--ink)"};
+  const state = {zone:D.default_zone, overview:{span:168,start:0}, battery:{span:168,start:0}};
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  const valid = value => value !== null && value !== undefined && Number.isFinite(Number(value));
+  const fmt = (value, digits=1) => valid(value) ? Number(value).toLocaleString("en-US",{minimumFractionDigits:digits,maximumFractionDigits:digits}) : "–";
+  const tick = value => {if(!valid(value)) return "–";const a=Math.abs(value);return a>=1000?fmt(value,0):a>=100?fmt(value,0):a>=10?fmt(value,1):fmt(value,2)};
+  const zone = () => D.zones[state.zone];
+  const card = (key,value,unit="",detail="",color="") => `<div class="metric"><div class="k">${esc(key)}</div><div class="v ${color}">${esc(value)} <span class="u">${esc(unit)}</span></div><div class="d">${esc(detail)}</div></div>`;
+  const legend = (host,items) => {host.innerHTML=items.map(item=>`<span style="color:${item.color}"><i class="swatch${item.dash?" dash":""}" style="${item.dash?"":`background:${item.color}`} "></i>${esc(item.name)}</span>`).join("")};
+  const extent = (values,includeZero=false,symmetric=false) => {
+    const clean=values.filter(valid).map(Number);if(!clean.length)return[-1,1];
+    let lo=Math.min(...clean),hi=Math.max(...clean),nonnegative=lo>=0,nonpositive=hi<=0;if(includeZero){lo=Math.min(0,lo);hi=Math.max(0,hi)}
+    if(symmetric){const m=Math.max(Math.abs(lo),Math.abs(hi),1e-9);return[-m,m]}
+    if(lo===hi){const p=Math.abs(lo||1)*.1;return[lo-p,hi+p]}
+    const pad=(hi-lo)*.08;lo-=pad;hi+=pad;if(includeZero&&nonnegative)lo=0;if(includeZero&&nonpositive)hi=0;return[lo,hi];
+  };
+  const svgText = (x,y,text,anchor="middle",cls="") => `<text x="${x}" y="${y}" text-anchor="${anchor}" class="${cls}" fill="var(--faint)" font-family="var(--mono)" font-size="10">${esc(text)}</text>`;
+  const linePath = (data,x,y) => {let d="",drawing=false;data.forEach((value,i)=>{if(!valid(value)){drawing=false;return}d+=`${drawing?"L":"M"}${x(i).toFixed(2)},${y(Number(value)).toFixed(2)}`;drawing=true});return d};
+
+  function showTip(event,title,rows){
+    const tipEl=$("#tip");tipEl.innerHTML=`<div class="tip-title">${esc(title)}</div>`+rows.map(row=>`<div class="tip-row"><span>${esc(row[0])}</span><b>${esc(row[1])}</b></div>`).join("");
+    tipEl.classList.add("on");const pad=12,rect=tipEl.getBoundingClientRect();let x=event.clientX+14,y=event.clientY+14;if(x+rect.width>innerWidth-pad)x=event.clientX-rect.width-14;if(y+rect.height>innerHeight-pad)y=innerHeight-rect.height-pad;tipEl.style.left=Math.max(pad,x)+"px";tipEl.style.top=Math.max(pad,y)+"px";
+  }
+  function hideTip(){$("#tip").classList.remove("on")}
+
+  function lineChart(host,series,options={}){
+    series=series.filter(item=>item.data&&item.data.length);const n=Math.max(1,...series.map(item=>item.data.length));
+    const W=760,H=options.height||300,pl=52,pr=options.rightAxis?53:18,pt=15,pb=42,iw=W-pl-pr,ih=H-pt-pb;
+    const left=series.filter(item=>item.axis!=="right"),right=series.filter(item=>item.axis==="right");
+    const [l0,l1]=extent(left.flatMap(item=>item.data),options.includeZeroLeft,options.symmetricLeft);
+    const [r0,r1]=extent(right.flatMap(item=>item.data),options.includeZeroRight,options.symmetricRight);
+    const x=i=>pl+(n===1?iw/2:i/(n-1)*iw),yl=v=>pt+(l1-v)/(l1-l0)*ih,yr=v=>pt+(r1-v)/(r1-r0)*ih;
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
+    for(let k=0;k<5;k++){const y=pt+k*ih/4,lv=l1-k*(l1-l0)/4;svg+=`<line x1="${pl}" y1="${y}" x2="${W-pr}" y2="${y}" stroke="var(--grid)"/>${svgText(pl-7,y+3,tick(lv),"end")}`;if(right.length){const rv=r1-k*(r1-r0)/4;svg+=svgText(W-pr+7,y+3,tick(rv),"start")}}
+    const labels=options.xlabels||[[0,"0"],[n-1,String(n-1)]];labels.forEach(([i,label])=>{const xx=x(Math.max(0,Math.min(n-1,i)));svg+=`<line x1="${xx}" y1="${H-pb}" x2="${xx}" y2="${H-pb+4}" stroke="var(--faint)"/>${svgText(xx,H-14,label)}`});
+    if(options.leftLabel)svg+=`<text transform="translate(13 ${pt+ih/2}) rotate(-90)" text-anchor="middle" fill="var(--faint)" font-family="var(--mono)" font-size="10">${esc(options.leftLabel)}</text>`;
+    if(options.rightLabel)svg+=`<text transform="translate(${W-5} ${pt+ih/2}) rotate(-90)" text-anchor="middle" fill="var(--faint)" font-family="var(--mono)" font-size="10">${esc(options.rightLabel)}</text>`;
+    series.forEach(item=>{const y=item.axis==="right"?yr:yl;const path=linePath(item.data,x,y);svg+=`<path d="${path}" fill="none" stroke="${item.color}" stroke-width="${item.width||2}" ${item.dash?`stroke-dasharray="${item.dash}"`:""} vector-effect="non-scaling-stroke"/>`});
+    svg+=`<rect x="${pl}" y="${pt}" width="${iw}" height="${ih}" fill="transparent" class="hover-target"/></svg>`;host.innerHTML=svg;
+    const target=host.querySelector(".hover-target");if(target){target.addEventListener("mousemove",event=>{const rect=target.getBoundingClientRect(),i=Math.max(0,Math.min(n-1,Math.round((event.clientX-rect.left)/rect.width*(n-1))));const title=options.hoverLabels?.[i]??`Point ${i+1}`;showTip(event,title,series.map(item=>[item.name,`${fmt(item.data[i],item.digits??2)}${item.unit?" "+item.unit:""}`]))});target.addEventListener("mouseleave",hideTip)}
+  }
+
+  function barChart(host,labels,series,options={}){
+    const n=Math.max(1,labels.length),W=760,H=options.height||300,pl=52,pr=18,pt=15,rotateLabels=options.rotateLabels??(n>8&&labels.some(label=>label.length>5)),pb=rotateLabels?78:58,iw=W-pl-pr,ih=H-pt-pb;
+    const values=series.flatMap(item=>item.data).filter(valid).map(Number);let [lo,hi]=extent(values,true,false);lo=values.some(value=>value<0)?Math.min(0,lo):0;hi=values.some(value=>value>0)?Math.max(0,hi):0;if(lo===hi)hi=lo+1;const y=v=>pt+(hi-v)/(hi-lo)*ih,y0=y(0),groupW=iw/n,barW=Math.min(34,groupW*.72/Math.max(1,series.length));
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img">`;
+    for(let k=0;k<5;k++){const yy=pt+k*ih/4,v=hi-k*(hi-lo)/4;svg+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="var(--grid)"/>${svgText(pl-7,yy+3,tick(v),"end")}`}
+    labels.forEach((label,i)=>{const cx=pl+(i+.5)*groupW,shown=label.length>18?label.slice(0,17)+"…":label;svg+=rotateLabels?`<text x="${cx}" y="${H-31}" transform="rotate(-28 ${cx} ${H-31})" text-anchor="end" fill="var(--faint)" font-family="var(--mono)" font-size="10">${esc(shown)}</text>`:svgText(cx,H-32,shown)});
+    series.forEach((item,j)=>item.data.forEach((raw,i)=>{if(!valid(raw))return;const v=Number(raw),x=pl+i*groupW+(groupW-series.length*barW)/2+j*barW,yy=Math.min(y(v),y0),h=Math.max(1,Math.abs(y(v)-y0));svg+=`<rect x="${x}" y="${yy}" width="${Math.max(1,barW-2)}" height="${h}" rx="2" fill="${item.color}" opacity=".9" class="bar-hit" data-i="${i}" data-j="${j}"/>`}));
+    if(options.yLabel)svg+=`<text transform="translate(13 ${pt+ih/2}) rotate(-90)" text-anchor="middle" fill="var(--faint)" font-family="var(--mono)" font-size="10">${esc(options.yLabel)}</text>`;
+    svg+=`</svg>`;host.innerHTML=svg;host.querySelectorAll(".bar-hit").forEach(rect=>{rect.addEventListener("mousemove",event=>{const i=+rect.dataset.i,j=+rect.dataset.j,item=series[j];showTip(event,labels[i],[[item.name,`${fmt(item.data[i],item.digits??2)}${item.unit?" "+item.unit:""}`]])});rect.addEventListener("mouseleave",hideTip)});
+  }
+
+  function scatterChart(host,payload){
+    if(!payload||!payload.points?.length){host.innerHTML='<div class="empty" style="display:block">Residual-load regression is unavailable for this zone.</div>';return}
+    const points=payload.points.filter(p=>valid(p[0])&&valid(p[1])),W=760,H=300,pl=54,pr=18,pt=15,pb=42,iw=W-pl-pr,ih=H-pt-pb;
+    const [x0,x1]=extent(points.map(p=>p[0])),[y0,y1]=extent(points.map(p=>p[1]));const x=v=>pl+(v-x0)/(x1-x0)*iw,y=v=>pt+(y1-v)/(y1-y0)*ih;
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img">`;for(let k=0;k<5;k++){const yy=pt+k*ih/4,yv=y1-k*(y1-y0)/4,xx=pl+k*iw/4,xv=x0+k*(x1-x0)/4;svg+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="var(--grid)"/>${svgText(pl-7,yy+3,tick(yv),"end")}${svgText(xx,H-14,tick(xv))}`}
+    points.forEach((p,i)=>{svg+=`<circle cx="${x(p[0])}" cy="${y(p[1])}" r="2" fill="var(--cy)" opacity=".28" class="point-hit" data-i="${i}"/>`});const ya=payload.slope_eur_mwh_per_gw*x0+payload.intercept_eur_mwh,yb=payload.slope_eur_mwh_per_gw*x1+payload.intercept_eur_mwh;svg+=`<line x1="${x(x0)}" y1="${y(ya)}" x2="${x(x1)}" y2="${y(yb)}" stroke="var(--ink)" stroke-width="2"/><text x="${pl+iw/2}" y="${H-2}" text-anchor="middle" fill="var(--faint)" font-family="var(--mono)" font-size="10">Residual load · GW</text><text transform="translate(13 ${pt+ih/2}) rotate(-90)" text-anchor="middle" fill="var(--faint)" font-family="var(--mono)" font-size="10">Price · €/MWh</text></svg>`;host.innerHTML=svg;
+    host.querySelectorAll(".point-hit").forEach(circle=>{circle.addEventListener("mousemove",event=>{const p=points[+circle.dataset.i];showTip(event,"Solved hour",[["Residual load",fmt(p[0],2)+" GW"],["Price",fmt(p[1],2)+" €/MWh"]])});circle.addEventListener("mouseleave",hideTip)});
+  }
+
+  function timeLabels(start,length){if(!length)return[];const positions=[0,.25,.5,.75,1].map(f=>Math.min(length-1,Math.round((length-1)*f)));return [...new Set(positions)].map(i=>[i,D.timestamps[start+i].slice(5,16).replace("T"," ")])}
+  function windowSlice(key){const s=state[key],n=D.timestamps.length,span=s.span<=0?n:Math.min(s.span,n);s.start=Math.max(0,Math.min(s.start,n-span));return{start:s.start,end:s.start+span,span}}
+  function updateTimeline(key){const ctl=$(`[data-timeline="${key}"]`),w=windowSlice(key),range=ctl.querySelector('input[type="range"]');range.max=Math.max(0,D.timestamps.length-w.span);range.value=w.start;const label=$(`#${key}Window`);if(label)label.textContent=`${D.timestamps[w.start].slice(0,16).replace("T"," ")} → ${D.timestamps[w.end-1].slice(0,16).replace("T"," ")}`;return w}
+  function setupTimelines(){$$('[data-timeline]').forEach(ctl=>{const key=ctl.dataset.timeline;ctl.querySelector(".segments").addEventListener("click",event=>{const button=event.target.closest("button[data-span]");if(!button)return;ctl.querySelectorAll("button[data-span]").forEach(x=>x.classList.remove("on"));button.classList.add("on");const old=windowSlice(key),center=old.start+old.span/2;state[key].span=+button.dataset.span;const next=windowSlice(key);state[key].start=Math.max(0,Math.round(center-next.span/2));renderTimeline(key)});ctl.querySelector('[data-action="prev"]').onclick=()=>{const w=windowSlice(key);state[key].start=Math.max(0,w.start-Math.max(1,Math.floor(w.span/2)));renderTimeline(key)};ctl.querySelector('[data-action="next"]').onclick=()=>{const w=windowSlice(key);state[key].start=Math.min(D.timestamps.length-w.span,w.start+Math.max(1,Math.floor(w.span/2)));renderTimeline(key)};ctl.querySelector('input[type="range"]').oninput=event=>{state[key].start=+event.target.value;renderTimeline(key)}})}
+  function renderTimeline(key){if(key==="overview")renderOverviewHourly();else renderBatteryHourly()}
+
+  function renderOverview(){
+    const z=zone(),p=z.price,b=z.battery,f=z.flows,g=z.generation;
+    $("#overviewMetrics").innerHTML=card("Average price",fmt(p.mean,2),"€/MWh",`σ ${fmt(p.std,2)}`,"cy")+card("Average daily spread",fmt(p.average_daily_spread,2),"€/MWh","TB1 price window","am")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load component")+card("Renewable generation",fmt(g.renewable_share_pct,1),"%","share of local generation","gr")+card("Net imports",fmt(f.net_import_twh,2),"TWh",`${fmt(f.imports_twh,1)} in · ${fmt(f.exports_twh,1)} out`,f.net_import_twh>=0?"cy":"pk")+card("Battery power",fmt(b?.power_gw,3),"GW",b?`${fmt(b.energy_gwh,3)} GWh`:"no battery","pu")+card("Equivalent cycles",fmt(b?.equivalent_cycles,1),"",b?"discharge-based":"not applicable")+card("Gross battery margin",fmt(b?.gross_revenue_meur,2),"€m",b?`${fmt(b.gross_revenue_keur_mw,1)} €k/MW`:"not applicable","gr");
+    renderOverviewHourly();
+    lineChart($("#overviewDay"),[{name:"Price",data:p.average_day,color:C.cy,unit:"€/MWh"},{name:"Residual load",data:z.residual_load.average_day_gw,color:C.am,axis:"right",unit:"GW"}],{rightAxis:true,leftLabel:"€/MWh",rightLabel:"GW",xlabels:[[0,"00"],[3,"03"],[6,"06"],[9,"09"],[12,"12"],[15,"15"],[18,"18"],[21,"21"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00")});legend($("#overviewDayLegend"),[{name:"Price",color:C.cy},{name:"Residual load",color:C.am}]);
+    const m=p.monthly;lineChart($("#overviewMonthly"),[{name:"Average price",data:m.average_price,color:C.cy,unit:"€/MWh"},{name:"Daily spread",data:m.average_daily_spread,color:C.am,unit:"€/MWh"}],{leftLabel:"€/MWh",xlabels:m.labels.map((x,i)=>[i,x.slice(5)]),hoverLabels:m.labels});legend($("#overviewMonthlyLegend"),[{name:"Average price",color:C.cy},{name:"Daily spread",color:C.am}]);
+  }
+  function renderOverviewHourly(){const z=zone(),w=updateTimeline("overview"),series=[{name:"Price",data:z.price.hourly.slice(w.start,w.end),color:C.cy,unit:"€/MWh"}];if(z.battery)series.push({name:"Battery dispatch",data:z.battery.dispatch_gw.slice(w.start,w.end),color:C.gr,axis:"right",unit:"GW"});lineChart($("#overviewHourly"),series,{rightAxis:!!z.battery,leftLabel:"€/MWh",rightLabel:z.battery?"GW":"",includeZeroRight:true,symmetricRight:true,xlabels:timeLabels(w.start,w.span),hoverLabels:D.timestamps.slice(w.start,w.end).map(x=>x.replace("T"," ").slice(0,16))});legend($("#overviewHourlyLegend"),[{name:"Price",color:C.cy},...(z.battery?[{name:"Battery dispatch",color:C.gr}]:[])]);}
+
+  function renderPrices(){
+    const z=zone(),p=z.price,r=z.residual_load.regression;
+    $("#priceMetrics").innerHTML=card("Minimum",fmt(p.minimum,2),"€/MWh","hourly minimum","cy")+card("5th percentile",fmt(p.p05,2),"€/MWh","lower tail")+card("95th percentile",fmt(p.p95,2),"€/MWh","upper tail","am")+card("Maximum",fmt(p.maximum,2),"€/MWh","hourly maximum","pk")+card("Negative-price hours",fmt(p.negative_hours,1),"h","weighted snapshots")+card("Price volatility",fmt(p.cv_pct,1),"%","coefficient of variation")+card("Residual-load corr.",fmt(r?.correlation,3),"r","Pearson correlation","gr")+card("Price sensitivity",fmt(r?.slope_eur_mwh_per_gw,2),"€/MWh/GW","OLS slope","pu");
+    const duration=p.hourly.filter(valid).map(Number).sort((a,b)=>b-a),n=duration.length;lineChart($("#priceDuration"),[{name:"Price",data:duration,color:C.cy,unit:"€/MWh"}],{leftLabel:"€/MWh",xlabels:[[0,"0%"],[Math.round((n-1)*.25),"25%"],[Math.round((n-1)*.5),"50%"],[Math.round((n-1)*.75),"75%"],[n-1,"100%"]],hoverLabels:duration.map((_,i)=>`${fmt(i/Math.max(1,n-1)*100,1)}% of hours`)});
+    const m=p.monthly;lineChart($("#priceMonthlySpread"),[{name:"Daily spread",data:m.average_daily_spread,color:C.am,unit:"€/MWh"}],{leftLabel:"€/MWh",xlabels:m.labels.map((x,i)=>[i,x.slice(5)]),hoverLabels:m.labels,includeZeroLeft:true});
+    const keys=["tb1","tb2","tb4"],labels=["TB1","TB2","TB4"],spreads=keys.map(k=>p.tb[k].spread_eur_mwh),gross=keys.map(k=>p.tb[k].gross_value_eur_mw_day);barChart($("#tbSpread"),labels,[{name:"Spread",data:spreads,color:C.cy,unit:"€/MWh"}],{yLabel:"€/MWh"});$("#tbNote").innerHTML=`Gross one-cycle values: <b>TB1 ${fmt(gross[0],1)}</b> · <b>TB2 ${fmt(gross[1],1)}</b> · <b>TB4 ${fmt(gross[2],1)} €/MW/day</b>, before losses and costs.`;
+    scatterChart($("#priceScatter"),r);$("#regressionNote").innerHTML=r?`Pearson <b>r = ${fmt(r.correlation,3)}</b>; fitted price sensitivity <b>${fmt(r.slope_eur_mwh_per_gw,2)} €/MWh per GW</b> of residual load.`:"Residual-load regression is unavailable because this zone has insufficient demand or price variation.";
+  }
+
+  function renderBattery(){
+    const b=zone().battery,empty=$("#batteryEmpty"),content=$("#batteryContent");if(!b){empty.style.display="block";content.style.display="none";return}empty.style.display="none";content.style.display="block";
+    $("#batteryMetrics").innerHTML=card("Power",fmt(b.power_gw,3),"GW","grid connection","cy")+card("Energy",fmt(b.energy_gwh,3),"GWh",`${fmt(b.duration_h,1)} h duration`,"pu")+card("Round-trip efficiency",fmt(b.round_trip_efficiency_pct,1),"%","nameplate efficiencies")+card("Equivalent cycles",fmt(b.equivalent_cycles,1),"","discharge-based","am")+card("Charge energy",fmt(b.charge_twh,3),"TWh",`${fmt(b.weighted_charge_price,1)} €/MWh`) + card("Discharge energy",fmt(b.discharge_twh,3),"TWh",`${fmt(b.weighted_discharge_price,1)} €/MWh`,"gr")+card("Realized spread",fmt(b.realized_spread,2),"€/MWh","sell minus buy","cy")+card("Gross margin",fmt(b.gross_revenue_meur,2),"€m",`${fmt(b.gross_revenue_keur_mw,1)} €k/MW`,"gr");
+    renderBatteryHourly();const day=b.average_day;lineChart($("#batteryDay"),[{name:"Charge",data:day.charge_gw,color:C.am,unit:"GW"},{name:"Discharge",data:day.discharge_gw,color:C.gr,unit:"GW"},{name:"State of charge",data:day.soc_pct,color:C.pu,axis:"right",unit:"%"}],{rightAxis:true,leftLabel:"GW",rightLabel:"%",includeZeroLeft:true,includeZeroRight:true,xlabels:[[0,"00"],[3,"03"],[6,"06"],[9,"09"],[12,"12"],[15,"15"],[18,"18"],[21,"21"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00")});legend($("#batteryDayLegend"),[{name:"Charge",color:C.am},{name:"Discharge",color:C.gr},{name:"State of charge",color:C.pu}]);
+    const rev=b.monthly_revenue;barChart($("#batteryRevenue"),rev.labels.map(x=>x.slice(5)),[{name:"Gross margin",data:rev.values_meur,color:C.gr,unit:"€m"}],{yLabel:"€m"});
+    $("#batteryTable").innerHTML=`<thead><tr><th>Measure</th><th class="num">Value</th><th>Interpretation</th></tr></thead><tbody><tr><td>Storage efficiency</td><td class="num">${fmt(b.efficiency_store_pct,1)}%</td><td>Grid charging to stored energy</td></tr><tr><td>Dispatch efficiency</td><td class="num">${fmt(b.efficiency_dispatch_pct,1)}%</td><td>Stored energy to grid discharge</td></tr><tr><td>Realized energy ratio</td><td class="num">${fmt(b.realized_efficiency_pct,1)}%</td><td>Annual discharge ÷ charge</td></tr><tr><td>Discharge utilization</td><td class="num">${fmt(b.utilization_pct,1)}%</td><td>Discharge energy ÷ MW-hours available</td></tr><tr><td>Weighted buy price</td><td class="num">${fmt(b.weighted_charge_price,2)} €/MWh</td><td>Price weighted by charging energy</td></tr><tr><td>Weighted sell price</td><td class="num">${fmt(b.weighted_discharge_price,2)} €/MWh</td><td>Price weighted by discharged energy</td></tr></tbody>`;
+  }
+  function renderBatteryHourly(){const b=zone().battery;if(!b)return;const w=updateTimeline("battery");lineChart($("#batteryHourly"),[{name:"Dispatch",data:b.dispatch_gw.slice(w.start,w.end),color:C.gr,unit:"GW"},{name:"State of charge",data:b.soc_pct.slice(w.start,w.end),color:C.pu,axis:"right",unit:"%"}],{rightAxis:true,leftLabel:"GW",rightLabel:"%",includeZeroLeft:true,symmetricLeft:true,includeZeroRight:true,xlabels:timeLabels(w.start,w.span),hoverLabels:D.timestamps.slice(w.start,w.end).map(x=>x.replace("T"," ").slice(0,16))});legend($("#batteryHourlyLegend"),[{name:"Dispatch (+) / charge (−)",color:C.gr},{name:"State of charge",color:C.pu}]);}
+
+  function renderSupply(){
+    const z=zone(),g=z.generation,f=z.flows,rows=g.carriers;
+    $("#supplyMetrics").innerHTML=card("Local generation",fmt(g.total_generation_twh,2),"TWh","weighted dispatch","cy")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load")+card("Renewable share",fmt(g.renewable_share_pct,1),"%","wind, solar, hydro & other RES","gr")+card("Net imports",fmt(f.net_import_twh,2),"TWh",f.net_import_twh>=0?"net importer":"net exporter",f.net_import_twh>=0?"cy":"pk")+card("Gross imports",fmt(f.imports_twh,2),"TWh","receiving-terminal energy")+card("Gross exports",fmt(f.exports_twh,2),"TWh","sending-terminal energy");
+    const shown=rows.filter(row=>Math.abs(row.energy_twh||0)>1e-6).slice(0,12),labels=shown.map(row=>row.label);barChart($("#generationEnergy"),labels,[{name:"Generation",data:shown.map(row=>row.energy_twh),color:C.cy,unit:"TWh"}],{yLabel:"TWh",rotateLabels:true});const capacityRows=rows.filter(row=>!(row.carrier||"").toLowerCase().includes("slack")&&(row.capacity_gw||0)>0).sort((a,b)=>(b.capacity_gw||0)-(a.capacity_gw||0)).slice(0,12);barChart($("#generationCapacity"),capacityRows.map(row=>row.label),[{name:"Capacity",data:capacityRows.map(row=>row.capacity_gw),color:C.am,unit:"GW"}],{yLabel:"GW",rotateLabels:true});
+    const profiles=g.average_day.map(row=>({name:row.label,data:row.values_gw,color:row.color,unit:"GW",width:1.8}));profiles.push({name:"Demand",data:z.demand.average_day_gw,color:C.ink,unit:"GW",width:2.4,dash:"5 4"});lineChart($("#generationDay"),profiles,{leftLabel:"GW",includeZeroLeft:true,xlabels:[[0,"00"],[3,"03"],[6,"06"],[9,"09"],[12,"12"],[15,"15"],[18,"18"],[21,"21"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00")});legend($("#generationDayLegend"),profiles.map(row=>({name:row.name,color:row.color,dash:!!row.dash})));
+    const neighbors=f.neighbors.slice(0,10);if(neighbors.length){barChart($("#flowBars"),neighbors.map(row=>row.zone),[{name:"Imports",data:neighbors.map(row=>row.imports_twh),color:C.cy,unit:"TWh"},{name:"Exports",data:neighbors.map(row=>row.exports_twh),color:C.pk,unit:"TWh"}],{yLabel:"TWh"})}else{$("#flowBars").innerHTML='<div class="empty" style="display:block">No solved interconnector flow is available for this zone.</div>'}
+    $("#generationTable").innerHTML='<thead><tr><th>Carrier</th><th class="num">Generation (TWh)</th><th class="num">Capacity (GW)</th><th class="num">Capacity factor</th></tr></thead><tbody>'+rows.map(row=>`<tr><td><i class="dot" style="background:${row.color}"></i>${esc(row.label)}</td><td class="num">${fmt(row.energy_twh,3)}</td><td class="num">${fmt(row.capacity_gw,3)}</td><td class="num">${fmt(row.capacity_factor_pct,1)}%</td></tr>`).join("")+'</tbody>';
+  }
+
+  function renderAll(){const z=zone();$("#periodLabel").textContent=`${D.network.start.slice(0,10)} → ${D.network.end.slice(0,10)} · ${fmt(D.network.snapshots,0)} snapshots`;renderOverview();renderPrices();renderBattery();renderSupply()}
+  function init(){
+    $("#title").textContent=D.title;const select=$("#zoneSelect");Object.entries(D.zones).forEach(([key,value])=>{const option=document.createElement("option");option.value=key;option.textContent=value.label;select.appendChild(option)});select.value=state.zone;select.onchange=()=>{state.zone=select.value;state.overview.start=0;state.battery.start=0;renderAll()};
+    $("#badge").innerHTML=`<b>${esc(D.network.name)}</b><br>${esc(D.network.source_file)} · ${fmt(D.network.zones,0)} zones`;
+    const activatePage=pageName=>{const button=$(`.tab[data-page="${pageName}"]`);if(!button)return;$$('.tab').forEach(x=>x.classList.toggle("on",x===button));$$('.page').forEach(page=>page.classList.toggle("on",page.id===`page-${pageName}`));if(location.hash!==`#${pageName}`)history.replaceState(null,"",`#${pageName}`)};
+    $("#tabs").onclick=event=>{const button=event.target.closest(".tab");if(button)activatePage(button.dataset.page)};
+    setupTimelines();$$('[data-help]').forEach(item=>{item.addEventListener("mousemove",event=>showTip(event,"Method",[[item.dataset.help,""]]));item.addEventListener("mouseleave",hideTip)});
+    const setTheme=theme=>{document.documentElement.dataset.theme=theme;$("#themeBtn").textContent=theme==="light"?"◐ Dark mode":"◑ Light mode";try{localStorage.setItem("battery-dashboard-theme",theme)}catch(_){}};let saved="light";try{saved=localStorage.getItem("battery-dashboard-theme")||"light"}catch(_){}setTheme(saved);$("#themeBtn").onclick=()=>setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");
+    $("#footer").innerHTML=`Source: <b>${esc(D.network.source_file)}</b> · generated directly from solved PyPSA variables and snapshot weightings.<br>Gross battery margin is dispatch × locational marginal price and is not net project revenue. Renewable share includes carriers identified as wind, solar, hydro or other renewable supply.`;
+    renderAll();const requested=location.hash.slice(1),initial=["overview","prices","battery","supply"].includes(requested)?requested:"overview";activatePage(initial);
+  }
+  init();
+})();
+</script>
+</body>
+</html>

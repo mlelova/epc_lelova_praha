@@ -23,6 +23,45 @@ Parts 1 and 2 are the operational pipeline. Part 3 is documentation for
 readers curious about the data-preparation stage; it is **not** required
 to re-run the analysis.
 
+## Interactive dashboard from a solved network
+
+Generate a standalone, offline HTML dashboard from any solved PyPSA
+NetCDF file:
+
+```bash
+python -m visualisation.cli \
+  "small_scale_tests/baseline 2009 network/baseline_2030_cy2009_solved.nc"
+```
+
+The default output is
+`visualisation/output/<input-stem>_dashboard.html`. Open that file in a
+modern browser; it does not need a server or an internet connection. All
+bidding zones in the network are selectable and `DE00` is selected by
+default when present.
+
+Use an explicit output path, initial zone, or title when needed:
+
+```bash
+python -m visualisation.cli solved_network.nc \
+  --output reports/solved_network_dashboard.html \
+  --default-zone FR00 \
+  --title "2030 National Trends"
+```
+
+The same feature is available from Python:
+
+```python
+from visualisation import generate_dashboard
+
+path = generate_dashboard("solved_network.nc")
+print(path)
+```
+
+Dashboard values come only from the solved network: locational marginal
+prices, demand, generator and storage dispatch, state of charge,
+capacities, and interconnector flows. Battery revenue is gross wholesale
+dispatch margin, not net project revenue or an LCOS result.
+
 ## Where to start
 
 - **Want to reproduce results (quick command list)?** → [`docs/SIMPLE_USER_GUIDE.md`](docs/SIMPLE_USER_GUIDE.md)
