@@ -16,6 +16,7 @@ import pypsa
 
 DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 TEMPLATE_PATH = Path(__file__).resolve().parent / "dashboard_template.html"
+EUROPE_SCOPE = "EUROPE"
 VRE_PATTERN = re.compile(r"wind|solar", re.IGNORECASE)
 RENEWABLE_PATTERN = re.compile(r"wind|solar|hydro|other-res|renewable", re.IGNORECASE)
 FALLBACK_COLORS = (
@@ -172,6 +173,59 @@ def _monthly_price_metrics(price: pd.Series, weights: pd.Series) -> dict[str, li
     }
 
 
+def _price_payload(price: pd.Series, weights: pd.Series) -> dict[str, Any]:
+    price = pd.to_numeric(price, errors="coerce")
+    weights = weights.reindex(price.index)
+    price_mean = _weighted_mean(price, weights)
+    price_std = _weighted_std(price, weights)
+    finite_price = price.replace([np.inf, -np.inf], np.nan).dropna()
+    daily_spreads = finite_price.groupby(finite_price.index.normalize()).agg(
+        lambda values: values.max() - values.min()
+    )
+    return {
+        "hourly": _numbers(price, 2),
+        "average_day": _average_day(price, 2),
+        "monthly": _monthly_price_metrics(price, weights),
+        "tb": _daily_tb_metrics(price),
+        "mean": _finite_number(price_mean, 2),
+        "std": _finite_number(price_std, 2),
+        "cv_pct": _finite_number(
+            price_std / abs(price_mean) * 100.0
+            if math.isfinite(price_mean) and price_mean != 0
+            else float("nan"),
+            1,
+        ),
+        "minimum": _finite_number(
+            finite_price.min() if not finite_price.empty else float("nan"), 2
+        ),
+        "maximum": _finite_number(
+            finite_price.max() if not finite_price.empty else float("nan"), 2
+        ),
+        "p05": _finite_number(
+            finite_price.quantile(0.05) if not finite_price.empty else float("nan"),
+            2,
+        ),
+        "p95": _finite_number(
+            finite_price.quantile(0.95) if not finite_price.empty else float("nan"),
+            2,
+        ),
+        "negative_hours": _finite_number(weights.where(price < 0.0, 0.0).sum(), 1),
+        "average_daily_spread": _finite_number(daily_spreads.mean(), 2),
+    }
+
+
+def _demand_weighted_price(
+    prices: pd.DataFrame,
+    demand_by_bus: pd.DataFrame,
+) -> pd.Series:
+    numeric_prices = prices.apply(pd.to_numeric, errors="coerce")
+    available_demand = demand_by_bus.where(numeric_prices.notna(), 0.0)
+    total_demand = available_demand.sum(axis=1)
+    weighted_sum = (numeric_prices * available_demand).sum(axis=1, min_count=1)
+    weighted_price = weighted_sum.div(total_demand.where(total_demand.ne(0.0)))
+    return weighted_price.fillna(numeric_prices.mean(axis=1, skipna=True))
+
+
 def _average_day(series: pd.Series, digits: int = 2) -> list[float | None]:
     grouped = series.groupby(series.index.hour).mean().reindex(range(24))
     return _numbers(grouped, digits)
@@ -223,6 +277,81 @@ def _carrier_metadata(network: pypsa.Network, carriers: Iterable[str]) -> dict[s
     return metadata
 
 
+def _generation_scope_payload(
+    annual_rows: pd.DataFrame,
+    hourly_rows: pd.DataFrame,
+    carrier_meta: dict[str, dict[str, str]],
+    total_weight: float,
+) -> dict[str, Any]:
+    carrier_rows: list[dict[str, Any]] = []
+    for carrier, row in annual_rows.iterrows():
+        carrier_name = str(carrier)
+        energy = float(row.energy_mwh)
+        capacity = float(row.capacity_mw)
+        capacity_factor = (
+            energy / (capacity * total_weight) * 100.0
+            if capacity > 0 and total_weight > 0
+            else float("nan")
+        )
+        carrier_rows.append(
+            {
+                "carrier": carrier_name,
+                **carrier_meta[carrier_name],
+                "energy_twh": _finite_number(energy / 1e6, 6),
+                "capacity_gw": _finite_number(capacity / 1000.0, 3),
+                "capacity_factor_pct": _finite_number(capacity_factor, 1),
+            }
+        )
+    carrier_rows.sort(key=lambda row: abs(row["energy_twh"] or 0.0), reverse=True)
+
+    profiles: list[dict[str, Any]] = []
+    ranked = [row["carrier"] for row in carrier_rows[:8]]
+    for carrier in ranked:
+        if carrier not in hourly_rows.index:
+            continue
+        profiles.append(
+            {
+                "carrier": carrier,
+                **carrier_meta[carrier],
+                "values_gw": _numbers(hourly_rows.loc[carrier] / 1000.0, 3),
+            }
+        )
+    other = hourly_rows.drop(index=ranked, errors="ignore").sum(axis=0)
+    if np.abs(other.to_numpy(dtype=float)).max(initial=0.0) > 1e-9:
+        profiles.append(
+            {
+                "carrier": "other",
+                "label": "Other",
+                "color": "#7d8aa0",
+                "values_gw": _numbers(other / 1000.0, 3),
+            }
+        )
+
+    total_generation = float(annual_rows.energy_mwh.sum()) if not annual_rows.empty else 0.0
+    renewable_generation = (
+        float(
+            sum(
+                row.energy_mwh
+                for carrier, row in annual_rows.iterrows()
+                if RENEWABLE_PATTERN.search(str(carrier))
+            )
+        )
+        if not annual_rows.empty
+        else 0.0
+    )
+    return {
+        "carriers": carrier_rows,
+        "average_day": profiles,
+        "total_generation_twh": _finite_number(total_generation / 1e6, 6),
+        "renewable_share_pct": _finite_number(
+            renewable_generation / total_generation * 100.0
+            if total_generation > 0
+            else float("nan"),
+            1,
+        ),
+    }
+
+
 def _generation_payload(
     network: pypsa.Network,
     buses: list[Any],
@@ -258,79 +387,29 @@ def _generation_payload(
     ).groupby(["bus", "carrier"], sort=False).sum(numeric_only=True)
 
     result: dict[str, dict[str, Any]] = {}
+    total_weight = float(generator_weights.sum())
     for bus in buses:
         if bus in annual_grouped.index.get_level_values(0):
             rows = annual_grouped.xs(bus, level=0).copy()
         else:
             rows = pd.DataFrame(columns=["energy_mwh", "capacity_mw"])
-        carrier_rows: list[dict[str, Any]] = []
-        for carrier, row in rows.iterrows():
-            energy = float(row.energy_mwh)
-            capacity = float(row.capacity_mw)
-            capacity_factor = (
-                energy / (capacity * float(generator_weights.sum())) * 100.0
-                if capacity > 0 and generator_weights.sum() > 0
-                else float("nan")
-            )
-            carrier_rows.append(
-                {
-                    "carrier": str(carrier),
-                    **carrier_meta[str(carrier)],
-                    "energy_twh": _finite_number(energy / 1e6, 6),
-                    "capacity_gw": _finite_number(capacity / 1000.0, 3),
-                    "capacity_factor_pct": _finite_number(capacity_factor, 1),
-                }
-            )
-        carrier_rows.sort(key=lambda row: abs(row["energy_twh"] or 0.0), reverse=True)
-
-        profiles: list[dict[str, Any]] = []
         if bus in hourly_by_group.index.get_level_values(0):
             bus_profiles = hourly_by_group.xs(bus, level=0)
-            ranked = [row["carrier"] for row in carrier_rows[:8]]
-            for carrier in ranked:
-                if carrier not in bus_profiles.index:
-                    continue
-                profiles.append(
-                    {
-                        "carrier": carrier,
-                        **carrier_meta[carrier],
-                        "values_gw": _numbers(bus_profiles.loc[carrier] / 1000.0, 3),
-                    }
-                )
-            other = bus_profiles.drop(index=ranked, errors="ignore").sum(axis=0)
-            if np.abs(other.to_numpy(dtype=float)).max(initial=0.0) > 1e-9:
-                profiles.append(
-                    {
-                        "carrier": "other",
-                        "label": "Other",
-                        "color": "#7d8aa0",
-                        "values_gw": _numbers(other / 1000.0, 3),
-                    }
-                )
-
-        total_generation = float(rows.energy_mwh.sum()) if not rows.empty else 0.0
-        renewable_generation = (
-            float(
-                sum(
-                    row.energy_mwh
-                    for carrier, row in rows.iterrows()
-                    if RENEWABLE_PATTERN.search(str(carrier))
-                )
-            )
-            if not rows.empty
-            else 0.0
+        else:
+            bus_profiles = pd.DataFrame(columns=range(24), dtype=float)
+        result[str(bus)] = _generation_scope_payload(
+            rows, bus_profiles, carrier_meta, total_weight
         )
-        result[str(bus)] = {
-            "carriers": carrier_rows,
-            "average_day": profiles,
-            "total_generation_twh": _finite_number(total_generation / 1e6, 6),
-            "renewable_share_pct": _finite_number(
-                renewable_generation / total_generation * 100.0
-                if total_generation > 0
-                else float("nan"),
-                1,
-            ),
-        }
+
+    europe_annual = annual_table.groupby("carrier", sort=False)[
+        ["energy_mwh", "capacity_mw"]
+    ].sum()
+    europe_hourly = hourly.T.assign(carrier=generators["_carrier"]).groupby(
+        "carrier", sort=False
+    ).sum(numeric_only=True)
+    result[EUROPE_SCOPE] = _generation_scope_payload(
+        europe_annual, europe_hourly, carrier_meta, total_weight
+    )
 
     vre_generators = generators.index[
         generators["_carrier"].map(lambda value: bool(VRE_PATTERN.search(value)))
@@ -349,11 +428,11 @@ def _battery_payloads(
 ) -> dict[str, dict[str, Any] | None]:
     storage = network.storage_units.copy()
     if storage.empty:
-        return {str(bus): None for bus in buses}
+        return {**{str(bus): None for bus in buses}, EUROPE_SCOPE: None}
     carriers = storage.get("carrier", "").fillna("").astype(str)
     battery_units = storage.index[carriers.str.contains("battery", case=False, na=False)]
     if battery_units.empty:
-        return {str(bus): None for bus in buses}
+        return {**{str(bus): None for bus in buses}, EUROPE_SCOPE: None}
 
     battery = storage.loc[battery_units].copy()
     battery["_capacity"] = _effective_capacity(battery)
@@ -369,32 +448,58 @@ def _battery_payloads(
         battery_units,
     )
 
-    result: dict[str, dict[str, Any] | None] = {}
-    for bus in buses:
-        units = battery.index[battery["bus"] == bus]
-        if units.empty:
-            result[str(bus)] = None
-            continue
+    def build_payload(
+        units: pd.Index,
+        *,
+        use_local_unit_prices: bool,
+    ) -> dict[str, Any]:
         capacity_mw = float(battery.loc[units, "_capacity"].sum())
         energy_mwh = float(battery.loc[units, "_energy"].sum())
-        zone_dispatch = dispatch[units].sum(axis=1)
+        unit_dispatch = dispatch[units]
+        zone_dispatch = unit_dispatch.sum(axis=1)
         zone_soc = state_of_charge[units].sum(axis=1)
-        charge = (-zone_dispatch.clip(upper=0.0)).astype(float)
-        discharge = zone_dispatch.clip(lower=0.0).astype(float)
+        if use_local_unit_prices:
+            unit_charge = -unit_dispatch.clip(upper=0.0)
+            unit_discharge = unit_dispatch.clip(lower=0.0)
+            charge = unit_charge.sum(axis=1).astype(float)
+            discharge = unit_discharge.sum(axis=1).astype(float)
+            local_prices = pd.concat(
+                [
+                    pd.to_numeric(prices[battery.at[unit, "bus"]], errors="coerce")
+                    for unit in units
+                ],
+                axis=1,
+            )
+            local_prices.columns = units
+            revenue_by_hour = (unit_dispatch * local_prices).sum(axis=1, min_count=1)
+            charge_cost_by_hour = (unit_charge * local_prices).sum(axis=1, min_count=1)
+            discharge_value_by_hour = (
+                unit_discharge * local_prices
+            ).sum(axis=1, min_count=1)
+        else:
+            charge = (-zone_dispatch.clip(upper=0.0)).astype(float)
+            discharge = zone_dispatch.clip(lower=0.0).astype(float)
+            price = pd.to_numeric(
+                prices[battery.at[units[0], "bus"]], errors="coerce"
+            )
+            revenue_by_hour = zone_dispatch * price
+            charge_cost_by_hour = charge * price
+            discharge_value_by_hour = discharge * price
         charge_mwh = _weighted_energy(charge, storage_weights)
         discharge_mwh = _weighted_energy(discharge, storage_weights)
-        price = prices[bus]
-        gross_revenue = _weighted_energy(zone_dispatch * price, objective_weights)
+        gross_revenue = _weighted_energy(revenue_by_hour, objective_weights)
+        objective_charge_mwh = _weighted_energy(charge, objective_weights)
+        objective_discharge_mwh = _weighted_energy(discharge, objective_weights)
         weighted_buy = (
-            _weighted_energy(charge * price, objective_weights)
-            / _weighted_energy(charge, objective_weights)
-            if _weighted_energy(charge, objective_weights) > 0
+            _weighted_energy(charge_cost_by_hour, objective_weights)
+            / objective_charge_mwh
+            if objective_charge_mwh > 0
             else float("nan")
         )
         weighted_sell = (
-            _weighted_energy(discharge * price, objective_weights)
-            / _weighted_energy(discharge, objective_weights)
-            if _weighted_energy(discharge, objective_weights) > 0
+            _weighted_energy(discharge_value_by_hour, objective_weights)
+            / objective_discharge_mwh
+            if objective_discharge_mwh > 0
             else float("nan")
         )
         cap_weights = battery.loc[units, "_capacity"]
@@ -412,12 +517,14 @@ def _battery_payloads(
 
         monthly_labels: list[str] = []
         monthly_revenue: list[float | None] = []
-        for period, values in zone_dispatch.groupby(zone_dispatch.index.to_period("M")):
+        for period, values in revenue_by_hour.groupby(
+            revenue_by_hour.index.to_period("M")
+        ):
             monthly_labels.append(str(period))
             monthly_revenue.append(
                 _finite_number(
                     _weighted_energy(
-                        values * price.reindex(values.index),
+                        values,
                         objective_weights.reindex(values.index),
                     )
                     / 1e6,
@@ -426,7 +533,7 @@ def _battery_payloads(
             )
 
         soc_pct = zone_soc / energy_mwh * 100.0 if energy_mwh > 0 else zone_soc * np.nan
-        result[str(bus)] = {
+        return {
             "power_gw": _finite_number(capacity_mw / 1000.0, 4),
             "energy_gwh": _finite_number(energy_mwh / 1000.0, 4),
             "duration_h": _finite_number(energy_mwh / capacity_mw if capacity_mw > 0 else float("nan"), 2),
@@ -473,6 +580,18 @@ def _battery_payloads(
                 "values_meur": monthly_revenue,
             },
         }
+
+    result: dict[str, dict[str, Any] | None] = {}
+    for bus in buses:
+        units = battery.index[battery["bus"] == bus]
+        result[str(bus)] = (
+            build_payload(units, use_local_unit_prices=False)
+            if not units.empty
+            else None
+        )
+    result[EUROPE_SCOPE] = build_payload(
+        battery.index, use_local_unit_prices=True
+    )
     return result
 
 
@@ -485,10 +604,24 @@ def _flow_payloads(
     p0 = _panel_frame(network, "links_t", "p0")
     p1 = _panel_frame(network, "links_t", "p1")
     if links.empty or p0.empty or p1.empty:
-        return {
-            str(bus): {"net_import_twh": 0.0, "imports_twh": 0.0, "exports_twh": 0.0, "neighbors": []}
+        empty_zones = {
+            str(bus): {
+                "mode": "zonal",
+                "net_import_twh": 0.0,
+                "imports_twh": 0.0,
+                "exports_twh": 0.0,
+                "neighbors": [],
+            }
             for bus in buses
         }
+        empty_zones[EUROPE_SCOPE] = {
+            "mode": "internal",
+            "internal_transfer_twh": 0.0,
+            "transmission_losses_twh": 0.0,
+            "active_corridors": 0,
+            "corridors": [],
+        }
+        return empty_zones
     p0 = _series_or_default(p0, network.snapshots, links.index)
     p1 = _series_or_default(p1, network.snapshots, links.index)
     result: dict[str, dict[str, Any]] = {}
@@ -522,6 +655,7 @@ def _flow_payloads(
             reverse=True,
         )
         result[str(bus)] = {
+            "mode": "zonal",
             "net_import_twh": _finite_number(_weighted_energy(zone_net, weights) / 1e6, 6),
             "imports_twh": _finite_number(
                 sum((row["imports_twh"] or 0.0) for row in neighbors), 6
@@ -531,6 +665,48 @@ def _flow_payloads(
             ),
             "neighbors": neighbors,
         }
+
+    bus_set = set(buses)
+    internal_links = links.index[
+        links.bus0.isin(bus_set)
+        & links.bus1.isin(bus_set)
+        & links.bus0.ne(links.bus1)
+    ]
+    corridor_totals: dict[tuple[str, str], dict[str, float]] = {}
+    total_transfer_mwh = 0.0
+    total_losses_mwh = 0.0
+    for link in internal_links:
+        sent = p0[link].clip(lower=0.0) + p1[link].clip(lower=0.0)
+        delivered = -p0[link].clip(upper=0.0) - p1[link].clip(upper=0.0)
+        transfer_mwh = _weighted_energy(sent, weights)
+        losses_mwh = _weighted_energy(sent - delivered, weights)
+        total_transfer_mwh += transfer_mwh
+        total_losses_mwh += losses_mwh
+        endpoints = tuple(
+            sorted((str(links.at[link, "bus0"]), str(links.at[link, "bus1"])))
+        )
+        entry = corridor_totals.setdefault(
+            endpoints, {"throughput_mwh": 0.0, "losses_mwh": 0.0}
+        )
+        entry["throughput_mwh"] += transfer_mwh
+        entry["losses_mwh"] += losses_mwh
+    corridors = [
+        {
+            "corridor": f"{endpoints[0]} ↔ {endpoints[1]}",
+            "throughput_twh": _finite_number(values["throughput_mwh"] / 1e6, 6),
+            "losses_twh": _finite_number(values["losses_mwh"] / 1e6, 6),
+        }
+        for endpoints, values in corridor_totals.items()
+        if values["throughput_mwh"] > 1e-9
+    ]
+    corridors.sort(key=lambda row: row["throughput_twh"] or 0.0, reverse=True)
+    result[EUROPE_SCOPE] = {
+        "mode": "internal",
+        "internal_transfer_twh": _finite_number(total_transfer_mwh / 1e6, 6),
+        "transmission_losses_twh": _finite_number(total_losses_mwh / 1e6, 6),
+        "active_corridors": len(corridors),
+        "corridors": corridors,
+    }
     return result
 
 
@@ -552,6 +728,10 @@ def _build_dashboard_data(
     bus_names = [str(bus) for bus in buses]
     if len(set(bus_names)) != len(bus_names):
         raise DashboardError("Bus names must be unique when converted to text.")
+    if EUROPE_SCOPE in bus_names:
+        raise DashboardError(
+            f"Bus name '{EUROPE_SCOPE}' is reserved for the modeled-Europe aggregate."
+        )
 
     price_frame = _panel_frame(network, "buses_t", "marginal_price")
     if price_frame.empty or not price_frame.notna().any().any():
@@ -563,12 +743,16 @@ def _build_dashboard_data(
         raise DashboardError(
             "No generator dispatch was found. The .nc file does not appear to contain solved results."
         )
-    prices = price_frame.reindex(index=snapshots, columns=buses)
+    prices = price_frame.reindex(index=snapshots, columns=buses).apply(
+        pd.to_numeric, errors="coerce"
+    )
 
     selected_default = default_zone or ("DE00" if "DE00" in bus_names else bus_names[0])
-    if selected_default not in bus_names:
+    available_scopes = [EUROPE_SCOPE, *bus_names]
+    if selected_default not in available_scopes:
         raise DashboardError(
-            f"Unknown default zone '{selected_default}'. Available zones: {', '.join(bus_names)}"
+            f"Unknown default zone '{selected_default}'. Available scopes: "
+            f"{', '.join(available_scopes)}"
         )
 
     objective_weights = _snapshot_weights(network, "objective")
@@ -590,16 +774,43 @@ def _build_dashboard_data(
     )
     flows = _flow_payloads(network, buses, generator_weights)
 
-    zone_payload: dict[str, dict[str, Any]] = {}
+    europe_price = _demand_weighted_price(prices, load_by_bus)
+    europe_load = load_by_bus.sum(axis=1)
+    europe_residual_load = residual_load.sum(axis=1)
+    has_europe_load = not loads.empty and loads.bus.isin(buses).any()
+    europe_demand_mwh = _weighted_energy(europe_load, generator_weights)
+    zone_payload: dict[str, dict[str, Any]] = {
+        EUROPE_SCOPE: {
+            "label": f"Europe · all {len(buses)} modeled zones",
+            "country": "",
+            "is_aggregate": True,
+            "member_zones": bus_names,
+            "has_load": bool(has_europe_load),
+            "price": _price_payload(europe_price, objective_weights),
+            "demand": {
+                "annual_twh": (
+                    _finite_number(europe_demand_mwh / 1e6, 6)
+                    if has_europe_load
+                    else None
+                ),
+                "average_day_gw": _average_day(europe_load / 1000.0, 3),
+            },
+            "residual_load": {
+                "average_day_gw": _average_day(
+                    europe_residual_load / 1000.0, 3
+                ),
+                "regression": _regression_payload(
+                    europe_residual_load, europe_price
+                ),
+            },
+            "generation": generation[EUROPE_SCOPE],
+            "battery": batteries[EUROPE_SCOPE],
+            "flows": flows[EUROPE_SCOPE],
+        }
+    }
     for bus, bus_name in zip(buses, bus_names):
         price = pd.to_numeric(prices[bus], errors="coerce")
         weights = objective_weights.reindex(price.index)
-        price_mean = _weighted_mean(price, weights)
-        price_std = _weighted_std(price, weights)
-        finite_price = price.replace([np.inf, -np.inf], np.nan).dropna()
-        daily_spreads = finite_price.groupby(finite_price.index.normalize()).agg(
-            lambda values: values.max() - values.min()
-        )
         demand_mwh = _weighted_energy(load_by_bus[bus], generator_weights)
         country = ""
         if "country" in network.buses and bus in network.buses.index:
@@ -610,27 +821,10 @@ def _build_dashboard_data(
         zone_payload[bus_name] = {
             "label": f"{bus_name} · {country}" if country and country != bus_name else bus_name,
             "country": country,
+            "is_aggregate": False,
+            "member_zones": [bus_name],
             "has_load": bool(loads.bus.eq(bus).any()) if not loads.empty else False,
-            "price": {
-                "hourly": _numbers(price, 2),
-                "average_day": _average_day(price, 2),
-                "monthly": _monthly_price_metrics(price, weights),
-                "tb": _daily_tb_metrics(price),
-                "mean": _finite_number(price_mean, 2),
-                "std": _finite_number(price_std, 2),
-                "cv_pct": _finite_number(
-                    price_std / abs(price_mean) * 100.0
-                    if math.isfinite(price_mean) and price_mean != 0
-                    else float("nan"),
-                    1,
-                ),
-                "minimum": _finite_number(finite_price.min() if not finite_price.empty else float("nan"), 2),
-                "maximum": _finite_number(finite_price.max() if not finite_price.empty else float("nan"), 2),
-                "p05": _finite_number(finite_price.quantile(0.05) if not finite_price.empty else float("nan"), 2),
-                "p95": _finite_number(finite_price.quantile(0.95) if not finite_price.empty else float("nan"), 2),
-                "negative_hours": _finite_number(weights.where(price < 0.0, 0.0).sum(), 1),
-                "average_daily_spread": _finite_number(daily_spreads.mean(), 2),
-            },
+            "price": _price_payload(price, weights),
             "demand": {
                 "annual_twh": _finite_number(demand_mwh / 1e6, 6) if loads.bus.eq(bus).any() else None,
                 "average_day_gw": _average_day(load_by_bus[bus] / 1000.0, 3),
@@ -647,7 +841,7 @@ def _build_dashboard_data(
     network_name = str(network.name).strip() if getattr(network, "name", None) else source_path.stem
     dashboard_title = title.strip() if title and title.strip() else f"{network_name} — Battery Dashboard"
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "title": dashboard_title,
         "default_zone": selected_default,
         "timestamps": [timestamp.isoformat() for timestamp in snapshots],
@@ -679,7 +873,8 @@ def generate_dashboard(
     output_path:
         Destination HTML path. Defaults to ``visualisation/output``.
     default_zone:
-        Initially selected bus. Defaults to ``DE00`` when available.
+        Initially selected bus or ``EUROPE`` aggregate. Defaults to ``DE00``
+        when available.
     title:
         Optional dashboard title.
 

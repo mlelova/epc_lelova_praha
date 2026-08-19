@@ -22,7 +22,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--default-zone",
-        help="Initially selected bidding zone (default: DE00 if present)",
+        help="Initially selected scope, including EUROPE (default: DE00 if present)",
     )
     parser.add_argument("--title", help="Optional dashboard title")
     return parser

@@ -103,6 +103,43 @@ class DashboardDataTests(unittest.TestCase):
         self.assertAlmostEqual(regression["correlation"], 1.0, places=3)
         self.assertAlmostEqual(regression["slope_eur_mwh_per_gw"], 1000.0, places=3)
 
+    def test_modeled_europe_scope_aggregates_system_results(self) -> None:
+        europe = self.data["zones"]["EUROPE"]
+        self.assertEqual(next(iter(self.data["zones"])), "EUROPE")
+        self.assertEqual(europe["label"], "Europe · all 3 modeled zones")
+        self.assertTrue(europe["is_aggregate"])
+        self.assertEqual(europe["member_zones"], ["A", "B", "C"])
+        self.assertFalse(self.data["zones"]["A"]["is_aggregate"])
+        self.assertEqual(self.data["zones"]["A"]["member_zones"], ["A"])
+        self.assertEqual(europe["price"]["mean"], 11.5)
+        self.assertEqual(europe["price"]["tb"]["tb4"]["spread_eur_mwh"], 20.0)
+        self.assertEqual(europe["demand"]["annual_twh"], 0.001032)
+        self.assertEqual(europe["residual_load"]["average_day_gw"][0], 0.008)
+        self.assertEqual(europe["generation"]["total_generation_twh"], 0.00108)
+        self.assertEqual(europe["generation"]["renewable_share_pct"], 8.9)
+        carriers = {
+            row["carrier"]: row for row in europe["generation"]["carriers"]
+        }
+        self.assertEqual(carriers["gas"]["capacity_gw"], 0.05)
+        self.assertEqual(carriers["solar"]["capacity_gw"], 0.005)
+        self.assertEqual(europe["battery"]["power_gw"], 0.01)
+        self.assertEqual(europe["battery"]["energy_gwh"], 0.02)
+
+    def test_modeled_europe_price_is_demand_weighted_with_mean_fallback(self) -> None:
+        weighted = build_solved_fixture()
+        weighted.add("Load", "B-load", bus="B")
+        weighted.loads_t.p_set.loc[:, "B-load"] = 30.0
+        data = _build_dashboard_data(weighted, Path("weighted-price.nc"))
+        europe = data["zones"]["EUROPE"]
+        self.assertEqual(europe["price"]["hourly"][0], 3.75)
+        self.assertEqual(europe["price"]["hourly"][1], 4.66)
+        self.assertEqual(europe["demand"]["annual_twh"], 0.002472)
+
+        weighted.loads_t.p_set.loc[:, :] = 0.0
+        fallback = _build_dashboard_data(weighted, Path("zero-demand.nc"))
+        self.assertEqual(fallback["zones"]["EUROPE"]["price"]["hourly"][0], 11.67)
+        self.assertEqual(fallback["zones"]["EUROPE"]["price"]["hourly"][1], 12.33)
+
     def test_battery_energy_revenue_and_cycles(self) -> None:
         battery = self.data["zones"]["A"]["battery"]
         self.assertEqual(battery["power_gw"], 0.01)
@@ -114,6 +151,36 @@ class DashboardDataTests(unittest.TestCase):
         self.assertEqual(battery["weighted_discharge_price"], 20.5)
         self.assertEqual(battery["gross_revenue_meur"], 0.001)
 
+    def test_europe_battery_economics_use_each_units_local_price(self) -> None:
+        network = build_solved_fixture()
+        network.add(
+            "StorageUnit",
+            "B-battery",
+            bus="B",
+            carrier="battery",
+            p_nom=5.0,
+            max_hours=2.0,
+            efficiency_store=0.9,
+            efficiency_dispatch=0.8,
+        )
+        network.storage_units.loc["B-battery", "p_nom_opt"] = 5.0
+        network.storage_units_t.p.loc[:, "B-battery"] = (
+            -network.storage_units_t.p["A-battery"] / 2.0
+        )
+        network.storage_units_t.state_of_charge.loc[:, "B-battery"] = 5.0
+        hours = np.tile(np.arange(24, dtype=float), 2)
+        network.buses_t.marginal_price.loc[:, "B"] = 2.0 * hours + 5.0
+
+        data = _build_dashboard_data(network, Path("local-battery-prices.nc"))
+        battery = data["zones"]["EUROPE"]["battery"]
+        self.assertEqual(battery["power_gw"], 0.015)
+        self.assertEqual(battery["energy_gwh"], 0.03)
+        self.assertEqual(battery["charge_twh"], 0.00009)
+        self.assertEqual(battery["discharge_twh"], 0.00009)
+        self.assertEqual(battery["weighted_charge_price"], 17.0)
+        self.assertEqual(battery["weighted_discharge_price"], 17.0)
+        self.assertEqual(battery["gross_revenue_meur"], 0.0)
+
     def test_link_terminal_direction_and_missing_components(self) -> None:
         zone_a = self.data["zones"]["A"]
         zone_b = self.data["zones"]["B"]
@@ -122,15 +189,30 @@ class DashboardDataTests(unittest.TestCase):
         self.assertEqual(zone_a["flows"]["net_import_twh"], -0.0096)
         self.assertEqual(zone_b["flows"]["imports_twh"], 0.00864)
         self.assertEqual(zone_b["flows"]["net_import_twh"], 0.00864)
+        europe_flow = self.data["zones"]["EUROPE"]["flows"]
+        self.assertEqual(europe_flow["mode"], "internal")
+        self.assertEqual(europe_flow["internal_transfer_twh"], 0.0096)
+        self.assertEqual(europe_flow["transmission_losses_twh"], 0.00096)
+        self.assertEqual(europe_flow["active_corridors"], 1)
+        self.assertEqual(europe_flow["corridors"][0]["corridor"], "A ↔ B")
+        self.assertNotIn("imports_twh", europe_flow)
+        self.assertNotIn("exports_twh", europe_flow)
         self.assertIsNone(zone_c["battery"])
         self.assertFalse(zone_c["has_load"])
         self.assertIsNone(zone_c["demand"]["annual_twh"])
+        self.assertEqual(zone_c["flows"]["neighbors"], [])
 
     def test_unknown_default_zone_is_rejected(self) -> None:
         with self.assertRaisesRegex(DashboardError, "Unknown default zone"):
             _build_dashboard_data(
                 self.network, Path("fixture.nc"), default_zone="missing"
             )
+
+    def test_europe_can_be_the_explicit_default(self) -> None:
+        data = _build_dashboard_data(
+            self.network, Path("fixture.nc"), default_zone="EUROPE"
+        )
+        self.assertEqual(data["default_zone"], "EUROPE")
 
     def test_unsolved_network_is_rejected(self) -> None:
         unsolved = build_solved_fixture()
@@ -186,7 +268,8 @@ class DashboardGenerationTests(unittest.TestCase):
             self.assertIsNotNone(match)
             payload = json.loads(match.group(1))
             self.assertEqual(payload["default_zone"], "A")
-            self.assertEqual(set(payload["zones"]), {"A", "B", "C"})
+            self.assertEqual(list(payload["zones"]), ["EUROPE", "A", "B", "C"])
+            self.assertTrue(payload["zones"]["EUROPE"]["is_aggregate"])
         finally:
             source.unlink(missing_ok=True)
             destination.unlink(missing_ok=True)

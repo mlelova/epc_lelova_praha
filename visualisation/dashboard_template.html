@@ -90,7 +90,7 @@
   </header>
 
   <div class="controls">
-    <div class="control"><span class="label">Bidding zone</span><select id="zoneSelect"></select></div>
+    <div class="control"><span class="label">Scope</span><select id="zoneSelect"></select></div>
     <div class="control"><span class="label">Period</span><span id="periodLabel"></span></div>
   </div>
 
@@ -131,7 +131,7 @@
   </section>
 
   <section class="page" id="page-battery">
-    <div class="empty" id="batteryEmpty">No battery storage unit is connected to this bidding zone in the solved network.</div>
+    <div class="empty" id="batteryEmpty">No battery storage unit is connected to this scope in the solved network.</div>
     <div id="batteryContent">
       <div class="metrics" id="batteryMetrics"></div>
       <div class="panel">
@@ -158,7 +158,7 @@
     </div>
     <div class="grid wide">
       <div class="panel"><h2>Average generation day</h2><div class="tag">largest carriers and demand · GW by hour</div><div class="chart" id="generationDay"></div><div class="legend" id="generationDayLegend"></div></div>
-      <div class="panel"><h2>Cross-border exchanges</h2><div class="tag">gross imports and exports by neighboring zone · TWh</div><div class="chart" id="flowBars"></div><div class="note">Flows use each link terminal’s solved injection, so receiving-side losses are reflected.</div></div>
+      <div class="panel"><h2 id="flowTitle">Cross-border exchanges</h2><div class="tag" id="flowTag">gross imports and exports by neighboring zone · TWh</div><div class="chart" id="flowBars"></div><div class="note" id="flowNote">Flows use each link terminal’s solved injection, so receiving-side losses are reflected.</div></div>
     </div>
     <div class="panel" style="margin-top:16px"><h2>Carrier detail</h2><div class="table-wrap"><table id="generationTable"></table></div></div>
   </section>
@@ -243,7 +243,8 @@
 
   function renderOverview(){
     const z=zone(),p=z.price,b=z.battery,f=z.flows,g=z.generation;
-    $("#overviewMetrics").innerHTML=card("Average price",fmt(p.mean,2),"€/MWh",`σ ${fmt(p.std,2)}`,"cy")+card("Average daily spread",fmt(p.average_daily_spread,2),"€/MWh","TB1 price window","am")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load component")+card("Renewable generation",fmt(g.renewable_share_pct,1),"%","share of local generation","gr")+card("Net imports",fmt(f.net_import_twh,2),"TWh",`${fmt(f.imports_twh,1)} in · ${fmt(f.exports_twh,1)} out`,f.net_import_twh>=0?"cy":"pk")+card("Battery power",fmt(b?.power_gw,3),"GW",b?`${fmt(b.energy_gwh,3)} GWh`:"no battery","pu")+card("Equivalent cycles",fmt(b?.equivalent_cycles,1),"",b?"discharge-based":"not applicable")+card("Gross battery margin",fmt(b?.gross_revenue_meur,2),"€m",b?`${fmt(b.gross_revenue_keur_mw,1)} €k/MW`:"not applicable","gr");
+    const flowCard=z.is_aggregate?card("Internal transfer",fmt(f.internal_transfer_twh,2),"TWh",`${fmt(f.active_corridors,0)} active corridors`,"cy"):card("Net imports",fmt(f.net_import_twh,2),"TWh",`${fmt(f.imports_twh,1)} in · ${fmt(f.exports_twh,1)} out`,f.net_import_twh>=0?"cy":"pk");
+    $("#overviewMetrics").innerHTML=card("Average price",fmt(p.mean,2),"€/MWh",`σ ${fmt(p.std,2)}`,"cy")+card("Average daily spread",fmt(p.average_daily_spread,2),"€/MWh","TB1 price window","am")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load component")+card("Renewable generation",fmt(g.renewable_share_pct,1),"%",z.is_aggregate?"share of modeled generation":"share of local generation","gr")+flowCard+card("Battery power",fmt(b?.power_gw,3),"GW",b?`${fmt(b.energy_gwh,3)} GWh`:"no battery","pu")+card("Equivalent cycles",fmt(b?.equivalent_cycles,1),"",b?"discharge-based":"not applicable")+card("Gross battery margin",fmt(b?.gross_revenue_meur,2),"€m",b?`${fmt(b.gross_revenue_keur_mw,1)} €k/MW`:"not applicable","gr");
     renderOverviewHourly();
     lineChart($("#overviewDay"),[{name:"Price",data:p.average_day,color:C.cy,unit:"€/MWh"},{name:"Residual load",data:z.residual_load.average_day_gw,color:C.am,axis:"right",unit:"GW"}],{rightAxis:true,leftLabel:"€/MWh",rightLabel:"GW",xlabels:[[0,"00"],[3,"03"],[6,"06"],[9,"09"],[12,"12"],[15,"15"],[18,"18"],[21,"21"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00")});legend($("#overviewDayLegend"),[{name:"Price",color:C.cy},{name:"Residual load",color:C.am}]);
     const m=p.monthly;lineChart($("#overviewMonthly"),[{name:"Average price",data:m.average_price,color:C.cy,unit:"€/MWh"},{name:"Daily spread",data:m.average_daily_spread,color:C.am,unit:"€/MWh"}],{leftLabel:"€/MWh",xlabels:m.labels.map((x,i)=>[i,x.slice(5)]),hoverLabels:m.labels});legend($("#overviewMonthlyLegend"),[{name:"Average price",color:C.cy},{name:"Daily spread",color:C.am}]);
@@ -270,10 +271,11 @@
 
   function renderSupply(){
     const z=zone(),g=z.generation,f=z.flows,rows=g.carriers;
-    $("#supplyMetrics").innerHTML=card("Local generation",fmt(g.total_generation_twh,2),"TWh","weighted dispatch","cy")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load")+card("Renewable share",fmt(g.renewable_share_pct,1),"%","wind, solar, hydro & other RES","gr")+card("Net imports",fmt(f.net_import_twh,2),"TWh",f.net_import_twh>=0?"net importer":"net exporter",f.net_import_twh>=0?"cy":"pk")+card("Gross imports",fmt(f.imports_twh,2),"TWh","receiving-terminal energy")+card("Gross exports",fmt(f.exports_twh,2),"TWh","sending-terminal energy");
+    const flowCards=z.is_aggregate?card("Internal throughput",fmt(f.internal_transfer_twh,2),"TWh","sending-terminal energy","cy")+card("Transmission losses",fmt(f.transmission_losses_twh,2),"TWh","sent minus delivered","pk")+card("Active corridors",fmt(f.active_corridors,0),"","non-zero transferred energy"):card("Net imports",fmt(f.net_import_twh,2),"TWh",f.net_import_twh>=0?"net importer":"net exporter",f.net_import_twh>=0?"cy":"pk")+card("Gross imports",fmt(f.imports_twh,2),"TWh","receiving-terminal energy")+card("Gross exports",fmt(f.exports_twh,2),"TWh","sending-terminal energy");
+    $("#supplyMetrics").innerHTML=card(z.is_aggregate?"Modeled generation":"Local generation",fmt(g.total_generation_twh,2),"TWh","weighted dispatch","cy")+card("Annual demand",fmt(z.demand.annual_twh,2),"TWh",z.has_load?"weighted load":"no load")+card("Renewable share",fmt(g.renewable_share_pct,1),"%","wind, solar, hydro & other RES","gr")+flowCards;
     const shown=rows.filter(row=>Math.abs(row.energy_twh||0)>1e-6).slice(0,12),labels=shown.map(row=>row.label);barChart($("#generationEnergy"),labels,[{name:"Generation",data:shown.map(row=>row.energy_twh),color:C.cy,unit:"TWh"}],{yLabel:"TWh",rotateLabels:true});const capacityRows=rows.filter(row=>!(row.carrier||"").toLowerCase().includes("slack")&&(row.capacity_gw||0)>0).sort((a,b)=>(b.capacity_gw||0)-(a.capacity_gw||0)).slice(0,12);barChart($("#generationCapacity"),capacityRows.map(row=>row.label),[{name:"Capacity",data:capacityRows.map(row=>row.capacity_gw),color:C.am,unit:"GW"}],{yLabel:"GW",rotateLabels:true});
     const profiles=g.average_day.map(row=>({name:row.label,data:row.values_gw,color:row.color,unit:"GW",width:1.8}));profiles.push({name:"Demand",data:z.demand.average_day_gw,color:C.ink,unit:"GW",width:2.4,dash:"5 4"});lineChart($("#generationDay"),profiles,{leftLabel:"GW",includeZeroLeft:true,xlabels:[[0,"00"],[3,"03"],[6,"06"],[9,"09"],[12,"12"],[15,"15"],[18,"18"],[21,"21"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>String(i).padStart(2,"0")+":00")});legend($("#generationDayLegend"),profiles.map(row=>({name:row.name,color:row.color,dash:!!row.dash})));
-    const neighbors=f.neighbors.slice(0,10);if(neighbors.length){barChart($("#flowBars"),neighbors.map(row=>row.zone),[{name:"Imports",data:neighbors.map(row=>row.imports_twh),color:C.cy,unit:"TWh"},{name:"Exports",data:neighbors.map(row=>row.exports_twh),color:C.pk,unit:"TWh"}],{yLabel:"TWh"})}else{$("#flowBars").innerHTML='<div class="empty" style="display:block">No solved interconnector flow is available for this zone.</div>'}
+    if(z.is_aggregate){const corridors=f.corridors.slice(0,10);$("#flowTitle").textContent="Largest internal corridors";$("#flowTag").textContent="transferred energy and modeled losses · TWh";$("#flowNote").textContent="Parallel links are grouped by zone pair; throughput uses sending-terminal energy and losses are sent minus delivered energy.";if(corridors.length){barChart($("#flowBars"),corridors.map(row=>row.corridor),[{name:"Throughput",data:corridors.map(row=>row.throughput_twh),color:C.cy,unit:"TWh"},{name:"Losses",data:corridors.map(row=>row.losses_twh),color:C.pk,unit:"TWh"}],{yLabel:"TWh",rotateLabels:true})}else{$("#flowBars").innerHTML='<div class="empty" style="display:block">No active internal interconnector corridor is available for modeled Europe.</div>'}}else{const neighbors=f.neighbors.slice(0,10);$("#flowTitle").textContent="Cross-border exchanges";$("#flowTag").textContent="gross imports and exports by neighboring zone · TWh";$("#flowNote").textContent="Flows use each link terminal’s solved injection, so receiving-side losses are reflected.";if(neighbors.length){barChart($("#flowBars"),neighbors.map(row=>row.zone),[{name:"Imports",data:neighbors.map(row=>row.imports_twh),color:C.cy,unit:"TWh"},{name:"Exports",data:neighbors.map(row=>row.exports_twh),color:C.pk,unit:"TWh"}],{yLabel:"TWh"})}else{$("#flowBars").innerHTML='<div class="empty" style="display:block">No solved interconnector flow is available for this zone.</div>'}}
     $("#generationTable").innerHTML='<thead><tr><th>Carrier</th><th class="num">Generation (TWh)</th><th class="num">Capacity (GW)</th><th class="num">Capacity factor</th></tr></thead><tbody>'+rows.map(row=>`<tr><td><i class="dot" style="background:${row.color}"></i>${esc(row.label)}</td><td class="num">${fmt(row.energy_twh,3)}</td><td class="num">${fmt(row.capacity_gw,3)}</td><td class="num">${fmt(row.capacity_factor_pct,1)}%</td></tr>`).join("")+'</tbody>';
   }
 
@@ -285,7 +287,7 @@
     $("#tabs").onclick=event=>{const button=event.target.closest(".tab");if(button)activatePage(button.dataset.page)};
     setupTimelines();$$('[data-help]').forEach(item=>{item.addEventListener("mousemove",event=>showTip(event,"Method",[[item.dataset.help,""]]));item.addEventListener("mouseleave",hideTip)});
     const setTheme=theme=>{document.documentElement.dataset.theme=theme;$("#themeBtn").textContent=theme==="light"?"◐ Dark mode":"◑ Light mode";try{localStorage.setItem("battery-dashboard-theme",theme)}catch(_){}};let saved="light";try{saved=localStorage.getItem("battery-dashboard-theme")||"light"}catch(_){}setTheme(saved);$("#themeBtn").onclick=()=>setTheme(document.documentElement.dataset.theme==="light"?"dark":"light");
-    $("#footer").innerHTML=`Source: <b>${esc(D.network.source_file)}</b> · generated directly from solved PyPSA variables and snapshot weightings.<br>Gross battery margin is dispatch × locational marginal price and is not net project revenue. Renewable share includes carriers identified as wind, solar, hydro or other renewable supply.`;
+    $("#footer").innerHTML=`Source: <b>${esc(D.network.source_file)}</b> · generated directly from solved PyPSA variables and snapshot weightings.<br>Modeled Europe covers all ${fmt(D.network.zones,0)} zones and uses an hourly demand-weighted price. Aggregate battery economics use each battery’s local price. Gross battery margin is not net project revenue.`;
     renderAll();const requested=location.hash.slice(1),initial=["overview","prices","battery","supply"].includes(requested)?requested:"overview";activatePage(initial);
   }
   init();

@@ -30,14 +30,15 @@ NetCDF file:
 
 ```bash
 python -m visualisation.cli \
-  "small_scale_tests/baseline 2009 network/baseline_2030_cy2009_solved.nc"
+  "small_scale_tests/baseline_2009_network/baseline_2030_cy2009_solved.nc"
 ```
 
 The default output is
 `visualisation/output/<input-stem>_dashboard.html`. Open that file in a
 modern browser; it does not need a server or an internet connection. All
-bidding zones in the network are selectable and `DE00` is selected by
-default when present.
+bidding zones in the network are selectable, preceded by a synthetic
+`Europe · all 55 modeled zones` scope. `DE00` is selected by default when
+present; choose `EUROPE` explicitly to open the whole modeled system.
 
 Use an explicit output path, initial zone, or title when needed:
 
@@ -47,6 +48,19 @@ python -m visualisation.cli solved_network.nc \
   --default-zone FR00 \
   --title "2030 National Trends"
 ```
+
+For the all-zone view:
+
+```bash
+python -m visualisation.cli solved_network.nc --default-zone EUROPE
+```
+
+The modeled-Europe price is demand-weighted hourly, with an available-zone
+mean fallback when aggregate demand is zero. Its interconnector view reports
+internal throughput, modeled losses, active corridors, and the largest
+internal corridors rather than treating internal links as imports or exports.
+Aggregate battery revenue and realized buy/sell prices retain each battery's
+local zonal price before being summed.
 
 The same feature is available from Python:
 
