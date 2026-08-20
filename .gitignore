@@ -11,3 +11,4 @@ visualisation/output/*.html
 # Large data (stored externally)
 data/
 solved_networks_core/
+new_data/
