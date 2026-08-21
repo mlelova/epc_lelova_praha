@@ -58,7 +58,8 @@ from build_network import (
     build_network,
     STORAGE_CARRIERS,
 )  # noqa: E402
-from load_network_data import _apply_gas_co2_prices, load_network_data  # noqa: E402
+from load_network_data import load_network_data  # noqa: E402
+from load_network_data_additional import _apply_gas_co2_prices  # noqa: E402
 
 DATA_DIR = ROOT / "data" / "open-tyndp"
 TYNDP_DIR = ROOT / "data" / "tyndp2024"
@@ -171,13 +172,14 @@ def _build_one(
     nuclear_scale: float,
     battery_extendable: bool,
     out_path: Path,
+    coal_price: float | None = None,
 ) -> "pypsa.Network":
     """Apply price adjustments, build network, export to out_path. Returns network object."""
 
     # Price-adjusted data (cheap copy — only technologies DataFrame differs)
     data = copy.copy(base_data)
     data["technologies"] = _apply_gas_co2_prices(
-        base_data["technologies"].copy(), gas_price, co2_price
+        base_data["technologies"].copy(), gas_price, co2_price, coal_price
     )
 
     # Optional: battery duration override
