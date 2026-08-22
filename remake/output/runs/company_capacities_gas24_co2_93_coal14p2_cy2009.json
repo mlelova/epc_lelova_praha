@@ -1,0 +1,43 @@
+{
+  "cli_args": {
+    "battery_extendable": false,
+    "battery_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/battery_override_de00_2030.csv",
+    "battery_scale": 1.0,
+    "build_only": false,
+    "capacity_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/capacity_override_de00_2030.csv",
+    "climate_year": 2009,
+    "co2_price": 93.0,
+    "coal_price": 14.2,
+    "command": "run",
+    "data_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/data/open-tyndp",
+    "demand_override": null,
+    "gas_price": 24.0,
+    "load_scale": 1.0,
+    "ntc_override": null,
+    "ntc_scale": 1.0,
+    "nuclear_profile_override": null,
+    "output_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output",
+    "slack_cost": 3000.0,
+    "solve": true,
+    "tag": "company_capacities_gas24_co2_93_coal14p2_cy2009",
+    "technology_override": null,
+    "threads": 4,
+    "tyndp_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/data/tyndp2024",
+    "vre_override": null
+  },
+  "error": null,
+  "git": {
+    "branch": "main",
+    "commit": "dd03dfc62fcffdab89d88892e032b9eacdaf95dd",
+    "dirty": true
+  },
+  "outputs": {
+    "built_network": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/built/company_capacities_gas24_co2_93_coal14p2_cy2009.nc",
+    "metadata": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/runs/company_capacities_gas24_co2_93_coal14p2_cy2009.json",
+    "solved_network": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009.nc"
+  },
+  "solve_result": null,
+  "started_at": "2026-08-22T13:44:13.459580+00:00",
+  "status": "solving",
+  "tag": "company_capacities_gas24_co2_93_coal14p2_cy2009"
+}

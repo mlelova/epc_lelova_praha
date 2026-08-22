@@ -1,0 +1,78 @@
+
+Gurobi 13.0.2 (mac64[arm]) logging started Sat Aug 22 15:45:10 2026
+
+Set parameter LogFile to value "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009_gurobi.log"
+Gurobi Optimizer version 13.0.2 build v13.0.2rc1 (mac64[arm] - Darwin 25.5.0 25F84)
+
+CPU model: Apple M2
+Thread count: 8 physical cores, 8 logical processors, using up to 4 threads
+
+Non-default parameters:
+FeasibilityTol  1e-05
+OptimalityTol  1e-05
+Method  2
+Crossover  0
+LogToConsole  0
+Threads  4
+
+Optimize a model with 21269280 rows, 10377240 columns and 35071680 nonzeros (Min)
+Model fingerprint: 0x37b53a12
+Model has 4196040 linear objective coefficients
+Coefficient statistics:
+  Matrix range     [3e-02, 1e+00]
+  Objective range  [1e-02, 3e+03]
+  Bounds range     [6e-03, 3e+04]
+  RHS range        [6e-03, 1e+09]
+
+Presolve removed 2219205 rows and 12113148 columns (presolve time = 5s)...
+Presolve removed 3261569 rows and 12130948 columns (presolve time = 10s)...
+Presolve removed 3270770 rows and 12140149 columns (presolve time = 16s)...
+Presolve removed 3270926 rows and 12140331 columns
+Presolve time: 20.44s
+Presolved: 7106314 rows, 9633669 columns, 22698714 nonzeros
+Elapsed ordering time = 6s
+Elapsed ordering time = 24s
+Elapsed ordering time = 25s
+Elapsed ordering time = 71s
+Elapsed ordering time = 75s
+Elapsed ordering time = 81s
+Elapsed ordering time = 86s
+Elapsed ordering time = 91s
+Elapsed ordering time = 95s
+Elapsed ordering time = 100s
+Elapsed ordering time = 106s
+Elapsed ordering time = 110s
+Elapsed ordering time = 115s
+Elapsed ordering time = 120s
+Ordering time: 124.85s
+
+Barrier statistics:
+ Free vars  : 777
+ AA' NZ     : 1.045e+08
+ Factor NZ  : 1.298e+09 (roughly 17.0 GB of memory)
+ Factor Ops : 1.215e+12 (roughly 4 seconds per iteration)
+ Threads    : 4
+
+                  Objective                Residual
+Iter       Primal          Dual         Primal    Dual     Compl     Time
+   0  -3.90949720e+15  1.17278169e+13  3.28e+04 1.69e+04  3.68e+09   166s
+   1  -5.68185042e+14  1.78660590e+13  2.64e+03 4.75e+05  1.27e+09   375s
+   2  -1.78115725e+14  5.10355528e+12  3.16e+02 5.34e+04  1.52e+08   670s
+   3  -5.89541202e+13  2.51960147e+12  3.07e+01 6.09e+03  1.91e+07   951s
+   4  -2.86616363e+13  1.85810842e+12  7.80e+00 1.20e+03  4.55e+06  1233s
+   5  -1.73827968e+13  1.40505537e+12  3.58e+00 3.40e+02  1.82e+06  1728s
+   6  -7.55334122e+12  1.01184402e+12  1.24e+00 9.82e+01  6.67e+05  2236s
+   7  -2.11922265e+12  6.45817139e+11  2.68e-01 3.40e+01  2.01e+05  2710s
+   8  -3.28634490e+11  4.69040743e+11  4.90e-02 1.10e+01  5.46e+04  3252s
+   9  -1.17751938e+11  4.18668844e+11  3.20e-02 6.58e+00  3.55e+04  3718s
+  10   4.03803572e+10  3.84236231e+11  2.00e-02 3.67e+00  2.22e+04  4300s
+  11   1.07853948e+11  3.66622059e+11  1.50e-02 2.36e+00  1.64e+04  4628s
+  12   1.61991559e+11  3.56574794e+11  1.11e-02 1.64e+00  1.22e+04  5023s
+  13   2.11945493e+11  3.50264933e+11  7.68e-03 1.24e+00  8.66e+03  5345s
+  14   2.50442998e+11  3.42120452e+11  4.97e-03 7.87e-01  5.70e+03  5675s
+  15   2.76055566e+11  3.37251683e+11  3.15e-03 5.74e-01  3.80e+03  6028s
+  16   2.87935242e+11  3.32429562e+11  2.29e-03 3.85e-01  2.75e+03  6365s
+  17   2.95932005e+11  3.29467198e+11  1.68e-03 2.83e-01  2.07e+03  6716s
+  18   3.01482106e+11  3.26373580e+11  1.26e-03 1.88e-01  1.53e+03  7032s
+  19   3.07618433e+11  3.23810912e+11  7.81e-04 1.18e-01  9.96e+02  7356s
+  20   3.11544056e+11  3.22104014e+11  4.83e-04 7.79e-02  6.50e+02  7639s
