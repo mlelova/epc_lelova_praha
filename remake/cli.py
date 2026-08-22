@@ -14,6 +14,7 @@ import pandas as pd
 
 from ._helpers import git_provenance, utc_now, write_json
 from .build_network import BuildConfig, build_single_network
+from .company_capacities import extract_company_capacities
 from .load_network import (
     OverrideValidationError,
     load_remake_data,
@@ -27,6 +28,8 @@ ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA_DIR = ROOT / "data" / "open-tyndp"
 DEFAULT_TYNDP_DIR = ROOT / "data" / "tyndp2024"
 DEFAULT_OUTPUT_DIR = ROOT / "remake" / "output"
+DEFAULT_COMPANY_OUTPUT_DIR = ROOT / "company_data" / "processed"
+DEFAULT_BASE_CAPACITIES = DEFAULT_DATA_DIR / "pemmdb_capacities_2030_grouped.csv"
 TAG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -45,6 +48,13 @@ def _positive_int(value: str) -> int:
     parsed = int(value)
     if parsed <= 0:
         raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
+
+
+def _year(value: str) -> int:
+    parsed = int(value)
+    if parsed < 1900 or parsed > 2200:
+        raise argparse.ArgumentTypeError("must be between 1900 and 2200")
     return parsed
 
 
@@ -110,6 +120,25 @@ def make_parser() -> argparse.ArgumentParser:
     compare.add_argument("--actual", required=True, type=_path)
     compare.add_argument("--zone", required=True)
     compare.add_argument("--output", type=_path, help="Aligned hourly output CSV")
+
+    extract = subparsers.add_parser(
+        "extract-capacities",
+        help="Convert a company monthly capacity export to remake overrides",
+    )
+    extract.add_argument("--source", required=True, type=_path)
+    extract.add_argument("--year", type=_year, default=2030)
+    extract.add_argument("--bus", default="DE00")
+    extract.add_argument(
+        "--base-capacities",
+        type=_path,
+        default=DEFAULT_BASE_CAPACITIES,
+        help="Base PEMMDB grouped-capacity CSV used to derive model splits",
+    )
+    extract.add_argument(
+        "--output-dir",
+        type=_path,
+        default=DEFAULT_COMPANY_OUTPUT_DIR,
+    )
     return parser
 
 
@@ -315,8 +344,39 @@ def compare_prices(args: argparse.Namespace) -> int:
     return 0
 
 
+def extract_capacities(args: argparse.Namespace) -> int:
+    result = extract_company_capacities(
+        source_path=_absolute(args.source),
+        base_capacities=_absolute(args.base_capacities),
+        output_dir=_absolute(args.output_dir),
+        bus=args.bus,
+        year=args.year,
+    )
+    print(
+        json.dumps(
+            {
+                "status": "extracted",
+                "capacity_override": str(result.capacity_path),
+                "battery_override": str(result.battery_path),
+                "audit": str(result.audit_path),
+                "capacity_rows": int(len(result.capacity_override)),
+                "battery_rows": int(len(result.battery_override)),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def _normalise_argv(argv: list[str]) -> list[str]:
-    if argv and argv[0] not in {"run", "compare", "-h", "--help"}:
+    if argv and argv[0] not in {
+        "run",
+        "compare",
+        "extract-capacities",
+        "-h",
+        "--help",
+    }:
         return ["run", *argv]
     return argv
 
@@ -328,7 +388,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.print_help()
         return 2
     try:
-        return compare_prices(args) if args.command == "compare" else run_forecast(args)
+        if args.command == "compare":
+            return compare_prices(args)
+        if args.command == "extract-capacities":
+            return extract_capacities(args)
+        return run_forecast(args)
     except (
         OverrideValidationError,
         FileNotFoundError,

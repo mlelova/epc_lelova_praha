@@ -165,6 +165,15 @@ class RemakeCliTests(unittest.TestCase):
         self.assertEqual(args.command, "run")
         self.assertEqual(args.tag, "forecast")
 
+    def test_extract_capacities_is_a_first_class_subcommand(self) -> None:
+        argv = _normalise_argv(
+            ["extract-capacities", "--source", "company_data/ins_cap.csv"]
+        )
+        args = make_parser().parse_args(argv)
+        self.assertEqual(args.command, "extract-capacities")
+        self.assertEqual(args.bus, "DE00")
+        self.assertEqual(args.year, 2030)
+
     def test_comparison_metrics(self) -> None:
         aligned = pd.DataFrame(
             {

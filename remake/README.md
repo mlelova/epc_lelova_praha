@@ -4,6 +4,55 @@
 `scenarios/`. It always builds one network, optionally solves it with Gurobi,
 and writes reproducibility metadata.
 
+## Extract company installed capacities
+
+Convert the monthly Germany company export into forecast-ready override files:
+
+```bash
+python -m remake extract-capacities \
+  --source company_data/ins_cap.csv \
+  --year 2030 \
+  --bus DE00 \
+  --output-dir company_data/processed
+```
+
+The command validates the semicolon-delimited, decimal-comma source and writes:
+
+```text
+company_data/processed/
+  capacity_override_de00_2030.csv
+  battery_override_de00_2030.csv
+  capacity_override_de00_2030.audit.json
+```
+
+The static 2030 capacities are hour-weighted means of the twelve monthly
+values: each first-of-month value is assumed to apply throughout that month.
+The audit records the source hash and metadata, month weights, annual source
+means, source-to-model mappings, baseline split proportions, generated values,
+and changes from the TYNDP base.
+
+Direct categories map to their corresponding DE00 carriers. Aggregate solar,
+conventional gas, and pumped-hydro values are split using existing DE00 model
+proportions. Hydro pump power and reservoir energy are scaled with turbine
+power to preserve baseline ratios. Biomass, geothermal, and waste are combined
+as `other-res`; generic `wnd` must remain zero to avoid double counting the
+separate onshore and offshore series. Battery power retains the base DE00
+two-hour duration because the company export contains GW but no GWh field.
+
+Use the extracted values in a forecast:
+
+```bash
+python -m remake \
+  --tag company_capacities_2030 \
+  --climate-year 2009 \
+  --capacity-override company_data/processed/capacity_override_de00_2030.csv \
+  --battery-override company_data/processed/battery_override_de00_2030.csv \
+  --build-only
+```
+
+The current importer intentionally produces one static annual capacity set;
+monthly time-varying installed capacity is not applied to the PyPSA network.
+
 ## Run a forecast
 
 From the project root:

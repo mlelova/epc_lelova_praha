@@ -1,0 +1,375 @@
+{
+  "aggregation": {
+    "annual_mean_gw": {
+      "bio": 7.609999999999999,
+      "btry": 11.49,
+      "ccgt": 19.65,
+      "coal": 6.359999999999999,
+      "engine": 0.52,
+      "gas_boiler": 5.299999999999999,
+      "geo": 0.0,
+      "gt": 3.8549315068876715,
+      "hydro_ps": 6.490000000000001,
+      "hydro_res": 0.12000000000000001,
+      "hydro_ror": 7.34,
+      "lig": 6.756136986336986,
+      "nuc": 0.0,
+      "oil": 0.5600000000000002,
+      "spv": 187.88904109589038,
+      "waste": 1.7600000000000002,
+      "wnd": 0.0,
+      "wnd_off": 23.802438356164384,
+      "wnd_on": 85.41920547945206
+    },
+    "assumption": "Each first-of-month value applies throughout that month",
+    "modeled_hours": 8760,
+    "month_hours": {
+      "2030-01": 744,
+      "2030-02": 672,
+      "2030-03": 744,
+      "2030-04": 720,
+      "2030-05": 744,
+      "2030-06": 720,
+      "2030-07": 744,
+      "2030-08": 744,
+      "2030-09": 720,
+      "2030-10": 744,
+      "2030-11": 720,
+      "2030-12": 744
+    },
+    "policy": "hour_weighted_annual_mean"
+  },
+  "baseline_proportions": {
+    "battery_duration_h": 1.9999999999999998,
+    "conventional_gas": {
+      "chp-gas-conventional-old-1-other-128.4eur": 0.8734500353758291,
+      "gas-conv": 0.12654996462417095
+    },
+    "hydro_reservoir_scale": 0.14652014652014653,
+    "pumped_hydro_family_scale": {
+      "hydro-phs": 0.7089843280598305,
+      "hydro-phs-pure": 0.7089843280598305
+    },
+    "pumped_hydro_turbines": {
+      "hydro-phs-pure-turbine": 0.7657729895542246,
+      "hydro-phs-turbine": 0.23422701044577537
+    },
+    "solar": {
+      "solar-pv-rooftop": 0.5488321038874057,
+      "solar-pv-utility": 0.4511678961125943
+    }
+  },
+  "battery_override": {
+    "base_duration_h": 1.9999999999999998,
+    "base_p_nom_mw": 3200.4,
+    "bus": "DE00",
+    "delta_p_nom_mw": 8289.6,
+    "duration_h": 1.9999999999999998,
+    "p_nom_mw": 11490.0
+  },
+  "capacity_override": [
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 7280.02,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -2196.540794112677,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "chp-gas-conventional-old-1-other-128.4eur",
+      "p_nom_mw": 5083.479205887324
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": 6359.999999999999,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "coal",
+      "p_nom_mw": 6359.999999999999
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 22245.864922839508,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -2595.864922839508,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "gas-ccgt",
+      "p_nom_mw": 19650.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 1054.767,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -318.24620588732535,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "gas-conv",
+      "p_nom_mw": 736.5207941126747
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 2399.1059999999993,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": 1455.825506887672,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "gas-ocgt",
+      "p_nom_mw": 3854.9315068876713
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 1861.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -541.5801654806555,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-phs-pump",
+      "p_nom_mw": 1319.4198345193445
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 7166.6,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -2085.592914526419,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-phs-pure-pump",
+      "p_nom_mw": 5081.007085473581
+    },
+    {
+      "base_e_nom_mwh": 276149.7771760171,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": -80363.91296100672,
+      "delta_p_nom_mw": 0.0,
+      "e_nom_mwh": 195785.8642150104,
+      "index_carrier": "hydro-phs-pure-reservoir",
+      "p_nom_mw": 0.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 7009.839999999995,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -2039.9732977930762,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-phs-pure-turbine",
+      "p_nom_mw": 4969.8667022069185
+    },
+    {
+      "base_e_nom_mwh": 438159.0,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": -127511.13580163271,
+      "delta_p_nom_mw": 0.0,
+      "e_nom_mwh": 310647.8641983673,
+      "index_carrier": "hydro-phs-reservoir",
+      "p_nom_mw": 0.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 2144.1,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -623.9667022069175,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-phs-turbine",
+      "p_nom_mw": 1520.1332977930824
+    },
+    {
+      "base_e_nom_mwh": 237217.033800469,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": -202459.95925094973,
+      "delta_p_nom_mw": 0.0,
+      "e_nom_mwh": 34757.07454951927,
+      "index_carrier": "hydro-reservoir-reservoir",
+      "p_nom_mw": 0.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 819.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -699.0,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-reservoir-turbine",
+      "p_nom_mw": 120.00000000000001
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 3933.9,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": 3406.1,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "hydro-ror-turbine",
+      "p_nom_mw": 7340.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": 6756.136986336986,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "lignite",
+      "p_nom_mw": 6756.136986336986
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 0.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": 0.0,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "nuclear",
+      "p_nom_mw": 0.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 30185.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -6382.5616438356155,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "offwind",
+      "p_nom_mw": 23802.438356164384
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 1585.33,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -1025.33,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "oil-light",
+      "p_nom_mw": 560.0000000000001
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 115000.7,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -29581.49452054793,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "onwind",
+      "p_nom_mw": 85419.20547945207
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 13067.586,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -3697.5859999999993,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "other-res",
+      "p_nom_mw": 9370.0
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 118000.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -14880.46227795526,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "solar-pv-rooftop",
+      "p_nom_mw": 103119.53772204474
+    },
+    {
+      "base_e_nom_mwh": 0.0,
+      "base_physical_p_nom_mw": 97002.0,
+      "bus": "DE00",
+      "delta_e_nom_mwh": 0.0,
+      "delta_p_nom_mw": -12232.496626154374,
+      "e_nom_mwh": 0.0,
+      "index_carrier": "solar-pv-utility",
+      "p_nom_mw": 84769.50337384563
+    }
+  ],
+  "generated_at": "2026-08-22T13:09:43.397958+00:00",
+  "ignored_zero_sources": [
+    "wnd"
+  ],
+  "mapping": {
+    "battery": {
+      "output": "battery_override",
+      "source": "btry"
+    },
+    "conventional_gas": {
+      "sources": [
+        "engine",
+        "gas_boiler"
+      ],
+      "targets": [
+        "gas-conv",
+        "chp-gas-conventional-old-1-other-128.4eur"
+      ]
+    },
+    "direct": {
+      "ccgt": "gas-ccgt",
+      "coal": "coal",
+      "gt": "gas-ocgt",
+      "hydro_ror": "hydro-ror-turbine",
+      "lig": "lignite",
+      "nuc": "nuclear",
+      "oil": "oil-light",
+      "wnd_off": "offwind",
+      "wnd_on": "onwind"
+    },
+    "generic_wind": {
+      "required_value_gw": 0.0,
+      "source": "wnd"
+    },
+    "hydro_reservoir": {
+      "source": "hydro_res",
+      "targets": [
+        "hydro-reservoir-turbine",
+        "hydro-reservoir-reservoir"
+      ]
+    },
+    "other_res": [
+      "bio",
+      "geo",
+      "waste"
+    ],
+    "pumped_hydro": {
+      "families": [
+        "hydro-phs",
+        "hydro-phs-pure"
+      ],
+      "source": "hydro_ps"
+    },
+    "solar": {
+      "source": "spv",
+      "targets": [
+        "solar-pv-utility",
+        "solar-pv-rooftop"
+      ]
+    }
+  },
+  "outputs": {
+    "audit": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/capacity_override_de00_2030.audit.json",
+    "battery_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/battery_override_de00_2030.csv",
+    "capacity_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/capacity_override_de00_2030.csv"
+  },
+  "schema_version": 1,
+  "source": {
+    "country": "de",
+    "effective_date": "2026-08-15T18:24:00",
+    "path": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/ins_cap.csv",
+    "sha256": "ddde97e8242c29b0df7cea0b50c631b66a5aaaccb5e54206babf996b609ee385",
+    "tag": "EPC_LT_Model",
+    "timezone": "CET",
+    "unit": "GW"
+  },
+  "target": {
+    "base_capacity_path": "/Users/michaelalelova/epc_praha/epc_lelova_praha/data/open-tyndp/pemmdb_capacities_2030_grouped.csv",
+    "base_capacity_sha256": "e6239d948cdb27df7d074508cbdf602bc17a73d997b24e23c6a7ebd416fd9727",
+    "bus": "DE00",
+    "year": 2030
+  },
+  "warnings": []
+}
