@@ -5,7 +5,7 @@
 #     pip install -r requirements.txt
 
 # Core scientific stack
-numpy>=1.26S
+numpy>=1.26
 pandas>=2.0
 scipy>=1.11
 matplotlib>=3.8

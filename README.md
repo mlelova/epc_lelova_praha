@@ -23,6 +23,11 @@ Parts 1 and 2 are the operational pipeline. Part 3 is documentation for
 readers curious about the data-preparation stage; it is **not** required
 to re-run the analysis.
 
+For a single company-data forecast instead of the full scenario matrix, use
+the [`remake` CLI](remake/README.md). It applies validated capacity,
+technology, battery, interconnector, demand, VRE, and nuclear-profile
+overrides before building and optionally solving one network.
+
 ## Interactive dashboard from a solved network
 
 Generate a standalone, offline HTML dashboard from any solved PyPSA
@@ -111,5 +116,4 @@ dispatch margin, not net project revenue or an LCOS result.
 
 For full replication from raw TYNDP data (data download, model build,
 ~30-hour Gurobi solve) follow [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
-
 
