@@ -38,6 +38,14 @@ _PECD_OFFSHORE_SLUG = "Wind_Offshore"
 _PECD_UTILITY_SLUG = "LFSolarPVUtility"
 _PECD_ROOFTOP_SLUG = "LFSolarPVRooftop"
 
+_PECD_PARQUET_FILES = {
+    "wind_onshore": "pecd_wind_onshore.parquet",
+    "wind_offshore": "pecd_wind_offshore.parquet",
+    "solar_utility": "pecd_solar_utility.parquet",
+    "solar_rooftop": "pecd_solar_rooftop.parquet",
+    "solar_generic": "pecd_solar_generic.parquet",
+}
+
 # Number of metadata rows before the data table in every PECD CSV
 _PECD_HEADER_ROWS = 10
 
@@ -274,6 +282,176 @@ def _load_pecd_offshore(
     df = pd.DataFrame(bus_profiles)
     df.index = pd.date_range("2030-01-01", periods=8760, freq="h")
     return df
+
+
+def _read_pecd_parquet(path: Path, climate_year: int) -> pd.DataFrame:
+    """Read and validate one climate year from a preprocessed PECD parquet."""
+    try:
+        df = pd.read_parquet(
+            path,
+            filters=[("climate_year", "==", climate_year)],
+        )
+    except Exception as exc:
+        raise ValueError(f"Could not read PECD parquet {path}: {exc}") from exc
+
+    if df.empty:
+        try:
+            available_index = pd.read_parquet(path, columns=[]).index
+            available = sorted(
+                set(available_index.get_level_values("climate_year").astype(int))
+            )
+        except Exception:
+            available = []
+        raise KeyError(
+            f"Climate year {climate_year} not found in {path.name}. "
+            f"Available: {available}"
+        )
+
+    if not isinstance(df.index, pd.MultiIndex) or set(df.index.names) != {
+        "climate_year",
+        "hour",
+    }:
+        raise ValueError(
+            f"{path.name} must use a MultiIndex named climate_year,hour"
+        )
+
+    df = df.droplevel("climate_year").sort_index()
+    if len(df) != 8760 or not df.index.equals(pd.Index(range(8760), name="hour")):
+        raise ValueError(
+            f"{path.name} climate year {climate_year} must contain hours 0..8759; "
+            f"found {len(df)} rows"
+        )
+    if df.shape[1] == 0:
+        raise ValueError(f"{path.name} contains no profile columns")
+
+    numeric = df.apply(pd.to_numeric, errors="coerce")
+    if numeric.isna().any().any():
+        raise ValueError(
+            f"{path.name} climate year {climate_year} contains missing/non-numeric values"
+        )
+    if (numeric < -1e-6).any().any() or (numeric > 1 + 1e-6).any().any():
+        raise ValueError(f"{path.name} capacity factors must be within [0, 1]")
+
+    numeric = numeric.clip(0.0, 1.0)
+    numeric.index = pd.date_range("2030-01-01", periods=8760, freq="h")
+    return numeric
+
+
+def _aggregate_pecd_offshore_parquet(
+    profiles: pd.DataFrame,
+    offshore_cap_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Aggregate raw offshore zone columns to modeled buses."""
+    zone_info: dict[str, list[tuple[str, float]]] = {}
+    for _, row in offshore_cap_df.iterrows():
+        zones_and_caps: list[tuple[str, float]] = []
+        for item in str(row.get("zones", "")).split(";"):
+            m = re.match(r"^(\S+)\s+\((\d+(?:\.\d+)?)\s*MW\)$", item.strip())
+            if m:
+                zones_and_caps.append((m.group(1), float(m.group(2))))
+        if zones_and_caps:
+            zone_info[str(row["bus"])] = zones_and_caps
+
+    bus_profiles: dict[str, np.ndarray] = {}
+    for _, row in offshore_cap_df.iterrows():
+        bus = str(row["bus"])
+        if float(row.get("total_existing_mw", 0.0)) <= 0:
+            continue
+
+        weighted_sum = np.zeros(len(profiles))
+        total_weight = 0.0
+        for zone, cap_mw in zone_info.get(bus, []):
+            source_zone = _ZONE_FILE_MAP.get(zone, zone)
+            if source_zone in profiles.columns:
+                weighted_sum += profiles[source_zone].to_numpy() * cap_mw
+                total_weight += cap_mw
+        if total_weight > 0:
+            bus_profiles[bus] = weighted_sum / total_weight
+            continue
+
+        source_bus = _ZONE_FILE_MAP.get(bus, bus)
+        if source_bus in profiles.columns:
+            bus_profiles[bus] = profiles[source_bus].to_numpy()
+
+    return pd.DataFrame(bus_profiles, index=profiles.index)
+
+
+def _merge_pecd_solar(
+    specific: pd.DataFrame,
+    generic: pd.DataFrame,
+) -> pd.DataFrame:
+    """Use type-specific solar where present, otherwise generic solar."""
+    missing_generic = [column for column in generic if column not in specific]
+    combined = pd.concat([specific, generic[missing_generic]], axis=1)
+    combined = combined.rename(columns=_NODE_MAP)
+    if combined.columns.duplicated().any():
+        duplicates = sorted(set(combined.columns[combined.columns.duplicated()]))
+        raise ValueError(f"Duplicate solar bus columns after node remapping: {duplicates}")
+    return combined
+
+
+def _load_pecd_profiles(
+    tyndp_dir: Path,
+    climate_year: int,
+    offshore_cap_df: pd.DataFrame,
+) -> tuple[dict[str, pd.DataFrame], str]:
+    """Load all PECD profiles from a complete parquet bundle or raw CSVs."""
+    preprocessed_dir = tyndp_dir / "preprocessed"
+    paths = {
+        key: preprocessed_dir / filename
+        for key, filename in _PECD_PARQUET_FILES.items()
+    }
+    present = {key for key, path in paths.items() if path.is_file()}
+
+    if present and len(present) != len(paths):
+        missing = [paths[key].name for key in paths if key not in present]
+        raise FileNotFoundError(
+            "Incomplete preprocessed PECD parquet bundle; missing: "
+            + ", ".join(missing)
+        )
+
+    if len(present) == len(paths):
+        onshore = _read_pecd_parquet(paths["wind_onshore"], climate_year)
+        offshore_raw = _read_pecd_parquet(paths["wind_offshore"], climate_year)
+        generic = _read_pecd_parquet(paths["solar_generic"], climate_year)
+        utility = _read_pecd_parquet(paths["solar_utility"], climate_year)
+        rooftop = _read_pecd_parquet(paths["solar_rooftop"], climate_year)
+
+        onshore = onshore.rename(columns=_NODE_MAP)
+        if onshore.columns.duplicated().any():
+            duplicates = sorted(set(onshore.columns[onshore.columns.duplicated()]))
+            raise ValueError(
+                f"Duplicate onshore bus columns after node remapping: {duplicates}"
+            )
+
+        return (
+            {
+                "wind_onshore": onshore,
+                "wind_offshore": _aggregate_pecd_offshore_parquet(
+                    offshore_raw, offshore_cap_df
+                ),
+                "solar_utility": _merge_pecd_solar(utility, generic),
+                "solar_rooftop": _merge_pecd_solar(rooftop, generic),
+            },
+            "preprocessed parquet",
+        )
+
+    pecd_dir = tyndp_dir / "PECD 2030"
+    return (
+        {
+            "wind_onshore": _load_pecd_onshore(pecd_dir, climate_year),
+            "wind_offshore": _load_pecd_offshore(
+                pecd_dir, climate_year, offshore_cap_df
+            ),
+            "solar_utility": _load_pecd_solar(
+                pecd_dir, climate_year, _PECD_UTILITY_SLUG
+            ),
+            "solar_rooftop": _load_pecd_solar(
+                pecd_dir, climate_year, _PECD_ROOFTOP_SLUG
+            ),
+        },
+        "raw CSV",
+    )
 
 
 # ===========================================================================
@@ -655,15 +833,13 @@ def load_network_data(
 
     # PECD profiles
     print(f"[2/4] Loading PECD profiles (CY={climate_year})...")
-    pecd_dir = tyndp_dir / "PECD 2030"
-    data["wind_onshore"] = _load_pecd_onshore(pecd_dir, climate_year)
-    data["wind_offshore"] = _load_pecd_offshore(
-        pecd_dir, climate_year, data["offshore_cap_df"]
+    pecd_profiles, pecd_source = _load_pecd_profiles(
+        tyndp_dir, climate_year, data["offshore_cap_df"]
     )
-    data["solar_utility"] = _load_pecd_solar(pecd_dir, climate_year, _PECD_UTILITY_SLUG)
-    data["solar_rooftop"] = _load_pecd_solar(pecd_dir, climate_year, _PECD_ROOFTOP_SLUG)
+    data.update(pecd_profiles)
     print(
-        f"  Onshore: {data['wind_onshore'].shape[1]} buses, "
+        f"  Source: {pecd_source}; "
+        f"Onshore: {data['wind_onshore'].shape[1]} buses, "
         f"Offshore: {data['wind_offshore'].shape[1]} buses, "
         f"Utility: {data['solar_utility'].shape[1]} buses, "
         f"Rooftop: {data['solar_rooftop'].shape[1]} buses"

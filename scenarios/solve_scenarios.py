@@ -64,8 +64,6 @@ def solve_network(
 
     solver_options = {
         "threads": threads,
-        "Method": 2,  # barrier — faster than simplex for large sparse LP
-        "Crossover": 0,  # skip crossover; interior-point solution is valid for dispatch LP
         "FeasibilityTol": 1e-5,
         "OptimalityTol": 1e-5,
         "LogToConsole": 0,

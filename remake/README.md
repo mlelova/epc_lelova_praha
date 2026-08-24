@@ -1,8 +1,20 @@
-# Single-run forecast CLI
+# Single-run company-data forecast CLI
 
 `remake` is a strict company-data override layer around the trusted builders in
 `scenarios/`. It always builds one network, optionally solves it with Gurobi,
 and writes reproducibility metadata.
+
+Run commands from the project root after installing `requirements.txt`.
+Python 3.10 or newer is required. The available commands are:
+
+```text
+python -m remake run ...
+python -m remake extract-capacities ...
+python -m remake compare ...
+```
+
+For compatibility, run options may also be passed directly as
+`python -m remake --tag ...`; this is equivalent to `python -m remake run`.
 
 ## Extract company installed capacities
 
@@ -50,6 +62,8 @@ python -m remake \
   --build-only
 ```
 
+The same invocation can be written explicitly as `python -m remake run ...`.
+
 The current importer intentionally produces one static annual capacity set;
 monthly time-varying installed capacity is not applied to the PyPSA network.
 
@@ -73,13 +87,30 @@ python -m remake \
 
 Building without solving is the default. `--build-only` can be supplied to
 make that choice explicit. Raw TYNDP inputs default to `data/tyndp2024`; use
-`--tyndp-dir` if the downloaded dataset is elsewhere.
+`--tyndp-dir` if the downloaded dataset is elsewhere. Prepared model tables
+default to `data/open-tyndp`; change that location with `--data-dir`.
+
+The run-level controls are:
+
+- `--gas-price`, `--coal-price`, and `--co2-price` override the corresponding
+  technology assumptions.
+- `--battery-scale`, `--ntc-scale`, and `--load-scale` multiply the base
+  battery power, interconnector capacity, and demand respectively.
+- `--battery-extendable` allows battery power capacity to be optimized.
+- `--slack-cost` sets the slack-generator marginal cost in EUR/MWh (default
+  `3000`).
+- `--threads` controls Gurobi threads when `--solve` is used (default `2`).
+- `--output-dir` changes the output root.
+
+CSV overrides are supplied with `--capacity-override`,
+`--technology-override`, `--battery-override`, `--ntc-override`,
+`--nuclear-profile-override`, `--demand-override`, and `--vre-override`.
 
 Outputs are grouped under `remake/output/` by default:
 
 ```text
 built/<tag>.nc
-solved/<tag>.nc
+solved/<tag>.nc        # only with --solve
 runs/<tag>.json
 ```
 
@@ -91,7 +122,9 @@ error. The metadata file is also updated after a failed run.
 
 Unknown identifiers, duplicate keys, negative capacities, invalid
 efficiencies, incomplete hourly profiles, and out-of-range capacity factors
-are errors. Input units are encoded in the column names where possible.
+are errors. VRE data must also contain a non-zero profile for every bus with
+positive capacity in the corresponding wind or solar carrier. Input units are
+encoded in the column names where possible.
 
 ### Capacity
 
@@ -152,10 +185,22 @@ Long form (`snapshot,bus,p_max_pu`) is also accepted. Values must be in
 `[0, 1]`. Listed bus columns replace the base profile; unlisted buses retain
 their base profile.
 
-Demand overrides use the same wide form or long form
-`snapshot,bus,demand_mw`. VRE overrides are long form with
-`snapshot,technology,bus,p_max_pu`, where technology is one of
+### Demand profile
+
+Demand overrides contain exactly 8760 contiguous hourly timestamps. They use
+the same wide form as the nuclear profile or the long form
+`snapshot,bus,demand_mw`. Demand values are MW and must be non-negative.
+
+### VRE profiles
+
+VRE overrides use long form with
+`snapshot,technology,bus,p_max_pu`, where `technology` is one of
 `wind_onshore`, `wind_offshore`, `solar_utility`, or `solar_rooftop`.
+Each supplied technology/bus series must have exactly 8760 contiguous hourly
+values in `[0, 1]`. Technologies not supplied retain their base profiles.
+After all overrides are applied, each wind and solar carrier must have a
+non-empty, non-zero profile for every bus where that carrier has positive
+capacity.
 
 ## Compare a solved run with actual prices
 
@@ -170,4 +215,8 @@ Actual prices may be wide (`timestamp,DE00`), a single-zone file
 (`timestamp,price_eur_mwh`), or long form
 (`timestamp,zone,price_eur_mwh`). The command writes an aligned hourly CSV and
 prints observation count, MAE, RMSE, MAPE (excluding zero actuals), mean bias,
-and correlation.
+and correlation. If `--output` is omitted, the CSV is written next to the
+solved network as `<solved-stem>_comparison_<zone>.csv`.
+
+This price comparison is separate from the interactive two-network dashboard
+documented in [`visualisation/README.md`](../visualisation/README.md).

@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>__DASHBOARD_TITLE__</title>
+  <style>
+    :root{color-scheme:light;--bg:#f4f6fa;--panel:#fff;--panel2:#f8fafc;--ink:#18212f;--muted:#647084;--faint:#8994a5;--line:#dce2ea;--grid:#e9edf3;--current:#087f8c;--baseline:#7b8494;--delta:#7256b7;--shadow:rgba(22,31,45,.08);--sans:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+    body.dark{color-scheme:dark;--bg:#11151c;--panel:#181e27;--panel2:#1c2430;--ink:#edf2f8;--muted:#a9b4c3;--faint:#7f8b9d;--line:#303b4a;--grid:#27313e;--current:#4ec3cf;--baseline:#a6afbd;--delta:#ad91ec;--shadow:rgba(0,0,0,.28)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)}button,select{font:inherit}.wrap{max-width:1440px;margin:auto;padding:24px 24px 48px}
+    header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start;margin-bottom:18px}h1{font-size:25px;line-height:1.2;margin:0 0 7px;letter-spacing:-.02em}.sub{color:var(--muted);font-size:13px;line-height:1.5}.sources{text-align:right;color:var(--muted);font:10px/1.65 var(--mono);overflow-wrap:anywhere}.sources b{color:var(--ink)}
+    .theme{border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--muted);padding:6px 9px;cursor:pointer;margin-bottom:7px}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);padding:10px 12px;border-radius:9px;box-shadow:0 2px 10px var(--shadow)}.label,.eyebrow{font:9px var(--mono);text-transform:uppercase;letter-spacing:.08em;color:var(--faint)}select{min-width:220px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:6px 28px 6px 8px}.model-key{margin-left:auto;display:flex;gap:16px;align-items:center;color:var(--muted);font-size:12px}.swatch{display:inline-block;width:17px;height:3px;border-radius:2px;margin-right:6px;vertical-align:middle}
+    .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:18px 0 16px;overflow-x:auto}.tab{white-space:nowrap;border:0;background:none;color:var(--muted);padding:10px 14px;cursor:pointer;border-bottom:2px solid transparent}.tab.on{color:var(--ink);border-color:var(--current);font-weight:650}.page{display:none}.page.on{display:block}
+    .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}.metric{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px 14px;min-height:115px}.metric .name{font:9px var(--mono);text-transform:uppercase;letter-spacing:.07em;color:var(--faint);margin-bottom:9px}.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}.pair .value{font:600 19px/1.15 var(--mono)}.pair .which{font-size:9px;color:var(--muted);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.current-text{color:var(--current)}.baseline-text{color:var(--baseline)}.change{border-top:1px solid var(--line);margin-top:9px;padding-top:7px;color:var(--delta);font:11px var(--mono)}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 15px;box-shadow:0 2px 10px var(--shadow);min-width:0}.panel.full{grid-column:1/-1}.panel h2{font-size:14px;margin:0}.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}.tag{font:9.5px var(--mono);color:var(--faint);margin-top:4px}.chart{width:100%;min-height:290px;margin-top:8px;overflow:hidden}.chart svg{display:block;width:100%;height:auto}.empty{display:flex;align-items:center;justify-content:center;min-height:220px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;margin-top:12px;font-size:12px}.legend{display:flex;gap:16px;flex-wrap:wrap;margin:4px 4px 0;color:var(--muted);font-size:11px}
+    .table-wrap{overflow:auto;max-height:540px;margin-top:10px}table{width:100%;border-collapse:collapse;font-size:11.5px}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}th{position:sticky;top:0;background:var(--panel);color:var(--faint);font:9px var(--mono);text-transform:uppercase;letter-spacing:.05em;z-index:1}td.num{text-align:right;font-family:var(--mono)}td.delta{color:var(--delta)}.carrier-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px}
+    .tooltip{position:fixed;opacity:0;pointer-events:none;z-index:1000;background:var(--panel);border:1px solid var(--line);box-shadow:0 8px 24px var(--shadow);border-radius:7px;padding:8px 10px;font:10.5px/1.6 var(--mono);max-width:330px}.tooltip.on{opacity:1}.tip-title{color:var(--faint);font-size:9px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}.tip-row{display:flex;justify-content:space-between;gap:20px}.tip-row b{font-weight:600}
+    footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--line);font:10px/1.7 var(--mono);color:var(--faint)}
+    @media(max-width:900px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.grid{grid-template-columns:1fr}.panel.full{grid-column:auto}.sources{text-align:left}header{flex-direction:column}.model-key{margin-left:0}}
+    @media(max-width:520px){.wrap{padding:14px 11px 36px}.metrics{grid-template-columns:1fr}.pair .value{font-size:17px}.chart{min-height:245px}.controls{align-items:flex-start;flex-direction:column}.model-key{gap:10px;flex-wrap:wrap}select{width:100%;min-width:0}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div><h1 id="title">__DASHBOARD_TITLE__</h1><div class="sub">Solved 2030 power-system forecasts · current calibration compared with the previous baseline</div></div>
+    <div class="sources"><button class="theme" id="themeBtn" type="button">◐ Dark mode</button><div id="sourceCurrent"></div><div id="sourceBaseline"></div></div>
+  </header>
+  <div class="controls">
+    <span class="label">Scope</span><select id="zoneSelect" aria-label="Comparison scope"></select>
+    <div class="model-key"><span><i class="swatch" style="background:var(--current)"></i><span id="keyCurrent"></span></span><span><i class="swatch" style="background:var(--baseline)"></i><span id="keyBaseline"></span></span><span><i class="swatch" style="background:var(--delta)"></i>Change</span></div>
+  </div>
+  <nav class="tabs" aria-label="Dashboard sections">
+    <button type="button" class="tab on" data-page="overview">Overview</button>
+    <button type="button" class="tab" data-page="prices">Prices</button>
+    <button type="button" class="tab" data-page="supply">Capacity &amp; generation</button>
+    <button type="button" class="tab" data-page="operations">Battery &amp; flows</button>
+  </nav>
+
+  <section class="page on" id="page-overview">
+    <div class="metrics" id="overviewMetrics"></div>
+    <div class="grid">
+      <div class="panel"><div class="panel-head"><div><h2>Average price day</h2><div class="tag">hourly mean · €/MWh</div></div></div><div class="chart" id="overviewPrice"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><div class="panel-head"><div><h2>Largest generation changes</h2><div class="tag">latest minus baseline · TWh</div></div></div><div class="chart" id="overviewGenerationDelta"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-prices">
+    <div class="metrics" id="priceMetrics"></div>
+    <div class="grid">
+      <div class="panel"><h2>Price duration curve</h2><div class="tag">all modeled hours ranked high to low · €/MWh</div><div class="chart" id="priceDuration"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><h2>Average day</h2><div class="tag">mean price by hour · €/MWh</div><div class="chart" id="priceDay"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><h2>Monthly average price</h2><div class="tag">€/MWh</div><div class="chart" id="monthlyPrice"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><h2>Monthly daily spread</h2><div class="tag">mean daily maximum minus minimum · €/MWh</div><div class="chart" id="monthlySpread"></div><div class="legend modelLegend"></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-supply">
+    <div class="metrics" id="supplyMetrics"></div>
+    <div class="grid">
+      <div class="panel"><h2>Installed capacity by carrier</h2><div class="tag">largest carriers by either model · GW</div><div class="chart" id="capacityBars"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><h2>Annual generation by carrier</h2><div class="tag">largest carriers by either model · TWh</div><div class="chart" id="generationBars"></div><div class="legend modelLegend"></div></div>
+      <div class="panel full"><h2>Carrier detail</h2><div class="table-wrap"><table id="carrierTable"></table></div></div>
+    </div>
+  </section>
+
+  <section class="page" id="page-operations">
+    <div class="metrics" id="batteryMetrics"></div>
+    <div class="grid">
+      <div class="panel"><h2 id="flowChartTitle">Cross-border comparison</h2><div class="tag" id="flowChartTag"></div><div class="chart" id="flowBars"></div><div class="legend modelLegend"></div></div>
+      <div class="panel"><h2>Flow detail</h2><div class="table-wrap"><table id="flowTable"></table></div></div>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+<div class="tooltip" id="tooltip" role="tooltip"></div>
+<script type="application/json" id="dashboard-data">__DASHBOARD_DATA__</script>
+<script>
+(() => {
+  "use strict";
+  const D=JSON.parse(document.getElementById("dashboard-data").textContent);
+  const $=selector=>document.querySelector(selector), $$=selector=>[...document.querySelectorAll(selector)];
+  const state={zone:D.default_zone};
+  const valid=value=>value!==null&&value!==undefined&&Number.isFinite(Number(value));
+  const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  const fmt=(value,digits=1)=>valid(value)?Number(value).toLocaleString("en-US",{minimumFractionDigits:digits,maximumFractionDigits:digits}):"–";
+  const short=value=>{if(!valid(value))return "–";const n=Number(value),a=Math.abs(n);return a>=1e9?fmt(n/1e9,2)+"bn":a>=1e6?fmt(n/1e6,1)+"m":a>=1e3?fmt(n/1e3,1)+"k":a>=100?fmt(n,0):a>=10?fmt(n,1):fmt(n,2)};
+  const signed=(value,digits=1)=>!valid(value)?"–":`${Number(value)>0?"+":""}${fmt(value,digits)}`;
+  const current=()=>D.models.current.zones[state.zone], baseline=()=>D.models.baseline.zones[state.zone], comparison=()=>D.comparison.zones[state.zone];
+  const scaleCmp=(cmp,factor)=>({...cmp,current:valid(cmp.current)?Number(cmp.current)*factor:null,baseline:valid(cmp.baseline)?Number(cmp.baseline)*factor:null,delta:valid(cmp.delta)?Number(cmp.delta)*factor:null});
+  function card(name,cmp,unit="",digits=1,deltaUnit=unit){
+    const pct=valid(cmp.pct_delta)?` (${signed(cmp.pct_delta,1)}%)`:"";
+    return `<div class="metric"><div class="name">${esc(name)}</div><div class="pair"><div><div class="value current-text">${fmt(cmp.current,digits)}${unit?` <small>${esc(unit)}</small>`:""}</div><div class="which">${esc(D.labels.current)}</div></div><div><div class="value baseline-text">${fmt(cmp.baseline,digits)}${unit?` <small>${esc(unit)}</small>`:""}</div><div class="which">${esc(D.labels.baseline)}</div></div></div><div class="change">Δ ${signed(cmp.delta,digits)}${deltaUnit?` ${esc(deltaUnit)}`:""}${pct}</div></div>`;
+  }
+  function extent(values,includeZero=false){const clean=values.filter(valid).map(Number);if(!clean.length)return[-1,1];let lo=Math.min(...clean),hi=Math.max(...clean);if(includeZero){lo=Math.min(0,lo);hi=Math.max(0,hi)}if(lo===hi){const p=Math.abs(lo||1)*.1;return[lo-p,hi+p]}const pad=(hi-lo)*.07;return[lo-pad,hi+pad]}
+  function showTip(event,title,rows){const tip=$("#tooltip");tip.innerHTML=`<div class="tip-title">${esc(title)}</div>`+rows.map(row=>`<div class="tip-row"><span>${esc(row[0])}</span><b>${esc(row[1])}</b></div>`).join("");tip.classList.add("on");const rect=tip.getBoundingClientRect(),pad=12;let x=event.clientX+14,y=event.clientY+14;if(x+rect.width>innerWidth-pad)x=event.clientX-rect.width-14;if(y+rect.height>innerHeight-pad)y=innerHeight-rect.height-pad;tip.style.left=Math.max(pad,x)+"px";tip.style.top=Math.max(pad,y)+"px"}
+  function hideTip(){$("#tooltip").classList.remove("on")}
+  function svgText(x,y,text,anchor="middle",size=10){return `<text x="${x}" y="${y}" text-anchor="${anchor}" fill="var(--faint)" font-family="var(--mono)" font-size="${size}">${esc(text)}</text>`}
+  function lineChart(host,series,options={}){
+    const cleanSeries=series.filter(item=>item.data?.length),n=Math.max(1,...cleanSeries.map(item=>item.data.length));if(!cleanSeries.length){host.innerHTML='<div class="empty">No comparable data for this scope.</div>';return}
+    const W=760,H=options.height||300,pl=58,pr=18,pt=18,pb=44,iw=W-pl-pr,ih=H-pt-pb,[lo,hi]=extent(cleanSeries.flatMap(item=>item.data));
+    const x=index=>pl+(n===1?iw/2:index/(n-1)*iw),y=value=>pt+(hi-value)/(hi-lo)*ih;
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(options.aria||"Comparison line chart")}">`;
+    for(let k=0;k<5;k++){const yy=pt+k*ih/4,v=hi-k*(hi-lo)/4;svg+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="var(--grid)"/>${svgText(pl-7,yy+3,short(v),"end")}`}
+    const ticks=options.labels||[[0,"0"],[n-1,String(n-1)]];ticks.forEach(([i,label])=>svg+=svgText(x(Math.max(0,Math.min(n-1,i))),H-14,label));
+    cleanSeries.forEach(item=>{let path="",drawing=false;item.data.forEach((raw,i)=>{if(!valid(raw)){drawing=false;return}path+=`${drawing?"L":"M"}${x(i).toFixed(2)},${y(Number(raw)).toFixed(2)}`;drawing=true});svg+=`<path d="${path}" fill="none" stroke="${item.color}" stroke-width="2.2" vector-effect="non-scaling-stroke"/>`});
+    svg+=`<rect class="line-hit" x="${pl}" y="${pt}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;host.innerHTML=svg;
+    const hit=host.querySelector(".line-hit");hit.addEventListener("mousemove",event=>{const rect=hit.getBoundingClientRect(),i=Math.max(0,Math.min(n-1,Math.round((event.clientX-rect.left)/rect.width*(n-1)))),title=options.hoverLabels?.[i]??`Point ${i+1}`;showTip(event,title,cleanSeries.map(item=>[item.name,`${fmt(item.data[i],2)} ${item.unit||""}`]))});hit.addEventListener("mouseleave",hideTip);
+  }
+  function barChart(host,labels,series,options={}){
+    if(!labels.length){host.innerHTML='<div class="empty">No comparable data for this scope.</div>';return}
+    const W=760,H=options.height||330,pl=62,pr=18,pt=18,pb=100,iw=W-pl-pr,ih=H-pt-pb,n=labels.length,values=series.flatMap(item=>item.data).filter(valid).map(Number),[lo0,hi0]=extent(values,true),lo=Math.min(0,lo0),hi=Math.max(0,hi0),y=value=>pt+(hi-value)/(hi-lo)*ih,y0=y(0),groupW=iw/n,barW=Math.max(2,Math.min(24,groupW*.7/series.length));
+    let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(options.aria||"Comparison bar chart")}">`;
+    for(let k=0;k<5;k++){const yy=pt+k*ih/4,v=hi-k*(hi-lo)/4;svg+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="var(--grid)"/>${svgText(pl-7,yy+3,short(v),"end")}`}
+    labels.forEach((label,i)=>{const xx=pl+(i+.5)*groupW,shown=label.length>18?label.slice(0,17)+"…":label;svg+=`<text x="${xx}" y="${H-28}" transform="rotate(-31 ${xx} ${H-28})" text-anchor="end" fill="var(--faint)" font-family="var(--mono)" font-size="9.5">${esc(shown)}</text>`});
+    series.forEach((item,j)=>item.data.forEach((raw,i)=>{if(!valid(raw))return;const value=Number(raw),xx=pl+i*groupW+(groupW-series.length*barW)/2+j*barW,yy=Math.min(y(value),y0),height=Math.max(1,Math.abs(y(value)-y0));svg+=`<rect class="bar-hit" data-i="${i}" data-j="${j}" x="${xx}" y="${yy}" width="${Math.max(1,barW-2)}" height="${height}" rx="1.5" fill="${item.color}"/>`}));svg+="</svg>";host.innerHTML=svg;
+    host.querySelectorAll(".bar-hit").forEach(rect=>{rect.addEventListener("mousemove",event=>{const i=+rect.dataset.i,j=+rect.dataset.j,item=series[j];showTip(event,labels[i],[[item.name,`${fmt(item.data[i],options.digits??2)} ${options.unit||""}`]])});rect.addEventListener("mouseleave",hideTip)});
+  }
+  function legend(){return `<span><i class="swatch" style="background:var(--current)"></i>${esc(D.labels.current)}</span><span><i class="swatch" style="background:var(--baseline)"></i>${esc(D.labels.baseline)}</span>`}
+  function monthTicks(labels){return labels.map((label,i)=>[i,label.slice(5)]).filter((_,i)=>i%Math.max(1,Math.ceil(labels.length/6))===0)}
+  function renderOverview(){const s=comparison().summary,flow=state.zone==="EUROPE"?["Internal transfer",s.internal_transfer_twh,"TWh"]:["Net imports",s.net_import_twh,"TWh"];$("#overviewMetrics").innerHTML=card("System objective",scaleCmp(D.comparison.system_objective_eur,1e-9),"bn €",2)+card("Mean price",s.mean_price_eur_mwh,"€/MWh",2)+card("Annual generation",s.generation_twh,"TWh",1)+card("Renewable share",s.renewable_share_pct,"%",1,"pp")+card("Battery power",s.battery_power_gw,"GW",2)+card(flow[0],flow[1],flow[2],2);
+    lineChart($("#overviewPrice"),[{name:D.labels.current,data:current().price.average_day,color:"var(--current)",unit:"€/MWh"},{name:D.labels.baseline,data:baseline().price.average_day,color:"var(--baseline)",unit:"€/MWh"}],{labels:[[0,"00:00"],[6,"06:00"],[12,"12:00"],[18,"18:00"],[23,"23:00"]],hoverLabels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}:00`)});
+    const changed=[...comparison().carriers].sort((a,b)=>Math.abs(b.energy_twh.delta||0)-Math.abs(a.energy_twh.delta||0)).slice(0,10);barChart($("#overviewGenerationDelta"),changed.map(row=>row.label),[{name:"Change",data:changed.map(row=>row.energy_twh.delta),color:"var(--delta)"}],{unit:"TWh",digits:2});
+  }
+  function renderPrices(){const s=comparison().summary;$("#priceMetrics").innerHTML=card("Price volatility",s.price_std_eur_mwh,"€/MWh",2)+card("P05 price",s.p05_eur_mwh,"€/MWh",2)+card("P95 price",s.p95_eur_mwh,"€/MWh",2)+card("Daily high–low spread",s.daily_spread_eur_mwh,"€/MWh",2)+card("TB4 spread",s.tb4_spread_eur_mwh,"€/MWh",2)+card("Negative-price hours",s.negative_hours,"h",0);
+    const cDuration=[...current().price.hourly].filter(valid).sort((a,b)=>b-a),bDuration=[...baseline().price.hourly].filter(valid).sort((a,b)=>b-a),n=Math.max(cDuration.length,bDuration.length),durationTicks=[[0,"0%"],[Math.round((n-1)*.25),"25%"],[Math.round((n-1)*.5),"50%"],[Math.round((n-1)*.75),"75%"],[n-1,"100%"]];
+    lineChart($("#priceDuration"),[{name:D.labels.current,data:cDuration,color:"var(--current)",unit:"€/MWh"},{name:D.labels.baseline,data:bDuration,color:"var(--baseline)",unit:"€/MWh"}],{labels:durationTicks,hoverLabels:Array.from({length:n},(_,i)=>`${fmt(i/Math.max(1,n-1)*100,1)}% of hours`)});
+    lineChart($("#priceDay"),[{name:D.labels.current,data:current().price.average_day,color:"var(--current)",unit:"€/MWh"},{name:D.labels.baseline,data:baseline().price.average_day,color:"var(--baseline)",unit:"€/MWh"}],{labels:[[0,"00"],[6,"06"],[12,"12"],[18,"18"],[23,"23"]],hoverLabels:Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}:00`)});
+    const months=current().price.monthly.labels,ticks=monthTicks(months);lineChart($("#monthlyPrice"),[{name:D.labels.current,data:current().price.monthly.average_price,color:"var(--current)",unit:"€/MWh"},{name:D.labels.baseline,data:baseline().price.monthly.average_price,color:"var(--baseline)",unit:"€/MWh"}],{labels:ticks,hoverLabels:months});lineChart($("#monthlySpread"),[{name:D.labels.current,data:current().price.monthly.average_daily_spread,color:"var(--current)",unit:"€/MWh"},{name:D.labels.baseline,data:baseline().price.monthly.average_daily_spread,color:"var(--baseline)",unit:"€/MWh"}],{labels:ticks,hoverLabels:months});
+  }
+  function renderSupply(){const s=comparison().summary;$("#supplyMetrics").innerHTML=card("Annual demand",s.demand_twh,"TWh",1)+card("Annual generation",s.generation_twh,"TWh",1)+card("Renewable share",s.renewable_share_pct,"%",1,"pp");const rows=comparison().carriers,capacity=[...rows].sort((a,b)=>Math.max(b.capacity_gw.current||0,b.capacity_gw.baseline||0)-Math.max(a.capacity_gw.current||0,a.capacity_gw.baseline||0)).slice(0,12),generation=rows.slice(0,12),series=(items,key)=>[{name:D.labels.current,data:items.map(row=>row[key].current),color:"var(--current)"},{name:D.labels.baseline,data:items.map(row=>row[key].baseline),color:"var(--baseline)"}];barChart($("#capacityBars"),capacity.map(row=>row.label),series(capacity,"capacity_gw"),{unit:"GW"});barChart($("#generationBars"),generation.map(row=>row.label),series(generation,"energy_twh"),{unit:"TWh"});
+    $("#carrierTable").innerHTML=`<thead><tr><th>Carrier</th><th colspan="4">Capacity · GW</th><th colspan="4">Generation · TWh</th><th colspan="3">Capacity factor · %</th></tr><tr><th></th><th>${esc(D.labels.current)}</th><th>${esc(D.labels.baseline)}</th><th>Δ</th><th>Δ %</th><th>${esc(D.labels.current)}</th><th>${esc(D.labels.baseline)}</th><th>Δ</th><th>Δ %</th><th>${esc(D.labels.current)}</th><th>${esc(D.labels.baseline)}</th><th>Δ pp</th></tr></thead><tbody>`+rows.map(row=>`<tr><td><i class="carrier-dot" style="background:${esc(row.color)}"></i>${esc(row.label)}</td><td class="num">${fmt(row.capacity_gw.current,3)}</td><td class="num">${fmt(row.capacity_gw.baseline,3)}</td><td class="num delta">${signed(row.capacity_gw.delta,3)}</td><td class="num delta">${valid(row.capacity_gw.pct_delta)?signed(row.capacity_gw.pct_delta,1)+"%":"–"}</td><td class="num">${fmt(row.energy_twh.current,3)}</td><td class="num">${fmt(row.energy_twh.baseline,3)}</td><td class="num delta">${signed(row.energy_twh.delta,3)}</td><td class="num delta">${valid(row.energy_twh.pct_delta)?signed(row.energy_twh.pct_delta,1)+"%":"–"}</td><td class="num">${fmt(row.capacity_factor_pct.current,1)}</td><td class="num">${fmt(row.capacity_factor_pct.baseline,1)}</td><td class="num delta">${signed(row.capacity_factor_pct.delta,1)}</td></tr>`).join("")+"</tbody>";
+  }
+  function renderOperations(){const s=comparison().summary;$("#batteryMetrics").innerHTML=card("Battery power",s.battery_power_gw,"GW",3)+card("Battery energy",s.battery_energy_gwh,"GWh",3)+card("Equivalent cycles",s.battery_cycles,"cycles",1)+card("Gross dispatch margin",s.battery_gross_revenue_meur,"€m",2)+(state.zone==="EUROPE"?card("Internal transfer",s.internal_transfer_twh,"TWh",2)+card("Transmission losses",s.transmission_losses_twh,"TWh",2):card("Imports",s.imports_twh,"TWh",2)+card("Exports",s.exports_twh,"TWh",2));
+    const internal=state.zone==="EUROPE",rows=comparison().flows.slice(0,12),key=internal?"throughput_twh":"net_import_twh";$("#flowChartTitle").textContent=internal?"Largest internal corridors":"Net imports by neighbor";$("#flowChartTag").textContent=internal?"sent energy on the largest modeled corridors · TWh":"positive is net import; negative is net export · TWh";barChart($("#flowBars"),rows.map(row=>row.label),[{name:D.labels.current,data:rows.map(row=>row[key].current),color:"var(--current)"},{name:D.labels.baseline,data:rows.map(row=>row[key].baseline),color:"var(--baseline)"}],{unit:"TWh"});
+    const columns=internal?[["Throughput","throughput_twh"],["Losses","losses_twh"]]:[["Net imports","net_import_twh"],["Gross imports","imports_twh"],["Gross exports","exports_twh"]];$("#flowTable").innerHTML=`<thead><tr><th>${internal?"Corridor":"Neighbor"}</th>${columns.map(([name])=>`<th colspan="3">${esc(name)} · TWh</th>`).join("")}</tr><tr><th></th>${columns.map(()=>`<th>${esc(D.labels.current)}</th><th>${esc(D.labels.baseline)}</th><th>Δ</th>`).join("")}</tr></thead><tbody>`+comparison().flows.map(row=>`<tr><td>${esc(row.label)}</td>${columns.map(([,column])=>`<td class="num">${fmt(row[column].current,3)}</td><td class="num">${fmt(row[column].baseline,3)}</td><td class="num delta">${signed(row[column].delta,3)}</td>`).join("")}</tr>`).join("")+"</tbody>";
+  }
+  function render(){renderOverview();renderPrices();renderSupply();renderOperations();$$('.modelLegend').forEach(host=>host.innerHTML=legend())}
+  function init(){const zoneSelect=$("#zoneSelect");Object.entries(D.models.current.zones).forEach(([key,zone])=>{const option=document.createElement("option");option.value=key;option.textContent=zone.label;zoneSelect.appendChild(option)});zoneSelect.value=state.zone;zoneSelect.addEventListener("change",()=>{state.zone=zoneSelect.value;render()});$("#keyCurrent").textContent=D.labels.current;$("#keyBaseline").textContent=D.labels.baseline;$("#sourceCurrent").innerHTML=`<b>${esc(D.labels.current)}</b> · ${esc(D.models.current.network.source_file)}`;$("#sourceBaseline").innerHTML=`<b>${esc(D.labels.baseline)}</b> · ${esc(D.models.baseline.network.source_file)}`;
+    $$('.tab').forEach(tab=>tab.addEventListener("click",()=>{$$('.tab').forEach(item=>item.classList.toggle("on",item===tab));$$('.page').forEach(page=>page.classList.toggle("on",page.id===`page-${tab.dataset.page}`))}));$("#themeBtn").addEventListener("click",()=>{document.body.classList.toggle("dark");$("#themeBtn").textContent=document.body.classList.contains("dark")?"◐ Light mode":"◐ Dark mode"});
+    const c=D.models.current.network,b=D.models.baseline.network;$("#footer").innerHTML=`Sources: <b>${esc(c.source_file)}</b> and <b>${esc(b.source_file)}</b> · ${fmt(c.snapshots,0)} aligned hourly snapshots · ${fmt(c.zones,0)} modeled zones.<br>All values are calculated directly from solved PyPSA variables and snapshot weightings. Deltas are latest minus baseline. Gross battery margin excludes capital cost, fixed O&amp;M, degradation, grid fees and ancillary-market revenue.`;render();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

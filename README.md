@@ -76,6 +76,29 @@ path = generate_dashboard("solved_network.nc")
 print(path)
 ```
 
+Compare two solved networks with the reusable comparison dashboard:
+
+```bash
+python -m visualisation.comparison_cli current.nc baseline.nc \
+  --output visualisation/output/model_comparison.html \
+  --default-zone DE00 \
+  --current-label "Latest calibration" \
+  --baseline-label "Old baseline"
+```
+
+Or call it from Python:
+
+```python
+from visualisation import generate_comparison_dashboard
+
+path = generate_comparison_dashboard("current.nc", "baseline.nc")
+print(path)
+```
+
+Comparison inputs must contain the same zones and the same chronological
+snapshots. The report shows absolute and percentage changes; percentage changes
+are omitted when the baseline value is zero.
+
 Dashboard values come only from the solved network: locational marginal
 prices, demand, generator and storage dispatch, state of charge,
 capacities, and interconnector flows. Battery revenue is gross wholesale
@@ -116,4 +139,3 @@ dispatch margin, not net project revenue or an LCOS result.
 
 For full replication from raw TYNDP data (data download, model build,
 ~30-hour Gurobi solve) follow [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md).
-

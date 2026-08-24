@@ -22,6 +22,7 @@ from remake.load_network import (
     read_ntc_override,
     read_profile_override,
     load_remake_data,
+    validate_remake_data,
 )
 
 
@@ -156,6 +157,73 @@ class RemakeOverrideTests(unittest.TestCase):
         self.assertEqual(result["electricity_demand"]["FR00"].iloc[0], 0.5)
         self.assertEqual(result["wind_onshore"]["DE00"].iloc[0], 0.75)
         self.assertEqual(result["wind_onshore"]["FR00"].iloc[0], 0.5)
+
+
+class RemakeVreValidationTests(unittest.TestCase):
+    def make_data(self) -> dict:
+        snapshots = pd.date_range("2030-01-01", periods=8760, freq="h")
+        profiles = {
+            key: pd.DataFrame(0.5, index=snapshots, columns=["DE00"])
+            for key in PROFILE_KEYS
+        }
+        profiles.update(
+            {
+                "buses": pd.DataFrame({"bus_id": ["DE00", "FR00"]}),
+                "links": pd.DataFrame(),
+                "capacities": pd.DataFrame(
+                    {
+                        "bus": ["DE00"],
+                        "index_carrier": ["onwind"],
+                        "pypsa_carrier": ["onwind"],
+                        "p_nom": [100.0],
+                        "e_nom": [0.0],
+                    }
+                ),
+                "technologies": pd.DataFrame(),
+            }
+        )
+        return profiles
+
+    def test_empty_vre_profile_is_rejected(self) -> None:
+        data = self.make_data()
+        data["wind_onshore"] = pd.DataFrame(index=data["wind_offshore"].index)
+
+        with self.assertRaisesRegex(
+            OverrideValidationError, "wind_onshore contains no bus profiles"
+        ):
+            validate_remake_data(data)
+
+    def test_missing_positive_capacity_bus_profile_is_rejected(self) -> None:
+        data = self.make_data()
+        data["capacities"] = pd.concat(
+            [
+                data["capacities"],
+                pd.DataFrame(
+                    {
+                        "bus": ["FR00"],
+                        "index_carrier": ["onwind"],
+                        "pypsa_carrier": ["onwind"],
+                        "p_nom": [50.0],
+                        "e_nom": [0.0],
+                    }
+                ),
+            ],
+            ignore_index=True,
+        )
+
+        with self.assertRaisesRegex(
+            OverrideValidationError, "wind_onshore.*missing.*FR00"
+        ):
+            validate_remake_data(data)
+
+    def test_all_zero_positive_capacity_bus_profile_is_rejected(self) -> None:
+        data = self.make_data()
+        data["wind_onshore"].loc[:, "DE00"] = 0.0
+
+        with self.assertRaisesRegex(
+            OverrideValidationError, "wind_onshore.*all-zero.*DE00"
+        ):
+            validate_remake_data(data)
 
 
 class RemakeCliTests(unittest.TestCase):

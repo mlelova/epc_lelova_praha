@@ -337,6 +337,45 @@ def validate_remake_data(data: dict) -> None:
             raise OverrideValidationError(f"{key} values must be within [0, 1]")
         data[key] = numeric.clip(0.0, 1.0)
 
+    vre_carriers = {
+        "wind_onshore": "onwind",
+        "wind_offshore": "offwind",
+        "solar_utility": "solar-pv-utility",
+        "solar_rooftop": "solar-pv-rooftop",
+    }
+    carrier_column = (
+        "pypsa_carrier" if "pypsa_carrier" in capacities else "index_carrier"
+    )
+    capacity_mw = pd.to_numeric(capacities["p_nom"], errors="coerce")
+
+    for profile_key, carrier in vre_carriers.items():
+        profile = data[profile_key]
+        if profile.shape[1] == 0:
+            raise OverrideValidationError(f"{profile_key} contains no bus profiles")
+
+        required_buses = set(
+            capacities.loc[
+                capacities[carrier_column].astype(str).eq(carrier)
+                & capacity_mw.gt(0),
+                "bus",
+            ].astype(str)
+        )
+        missing_buses = sorted(required_buses - set(profile.columns.astype(str)))
+        if missing_buses:
+            raise OverrideValidationError(
+                f"{profile_key} is missing positive-capacity bus profile(s): "
+                + ", ".join(missing_buses)
+            )
+
+        all_zero_buses = sorted(
+            bus for bus in required_buses if not profile[bus].gt(0).any()
+        )
+        if all_zero_buses:
+            raise OverrideValidationError(
+                f"{profile_key} has all-zero positive-capacity bus profile(s): "
+                + ", ".join(all_zero_buses)
+            )
+
 
 def load_remake_data(
     data_dir: Path | str,

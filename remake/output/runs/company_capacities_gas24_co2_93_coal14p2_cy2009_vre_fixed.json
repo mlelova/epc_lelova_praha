@@ -1,0 +1,50 @@
+{
+  "cli_args": {
+    "battery_extendable": false,
+    "battery_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/battery_override_de00_2030.csv",
+    "battery_scale": 1.0,
+    "build_only": false,
+    "capacity_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/capacity_override_de00_2030.csv",
+    "climate_year": 2009,
+    "co2_price": 93.0,
+    "coal_price": 14.2,
+    "command": "run",
+    "data_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/data/open-tyndp",
+    "demand_override": null,
+    "gas_price": 24.0,
+    "load_scale": 1.0,
+    "ntc_override": null,
+    "ntc_scale": 1.0,
+    "nuclear_profile_override": null,
+    "output_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output",
+    "slack_cost": 3000.0,
+    "solve": true,
+    "tag": "company_capacities_gas24_co2_93_coal14p2_cy2009_vre_fixed",
+    "technology_override": null,
+    "threads": 4,
+    "tyndp_dir": "/Users/michaelalelova/epc_praha/epc_lelova_praha/data/tyndp2024",
+    "vre_override": null
+  },
+  "error": null,
+  "finished_at": "2026-08-23T14:01:58.988132+00:00",
+  "git": {
+    "branch": "main",
+    "commit": "b5805560032674ff9623cb2c8124ddd41b0470aa",
+    "dirty": true
+  },
+  "outputs": {
+    "built_network": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/built/company_capacities_gas24_co2_93_coal14p2_cy2009_vre_fixed.nc",
+    "metadata": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/runs/company_capacities_gas24_co2_93_coal14p2_cy2009_vre_fixed.json",
+    "solved_network": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009_vre_fixed.nc"
+  },
+  "solve_result": {
+    "objective": 59427106522.21338,
+    "slack_mwh": 71878.6,
+    "solve_time_s": 383.9,
+    "status": "solved",
+    "termination_condition": "optimal"
+  },
+  "started_at": "2026-08-23T13:55:07.209981+00:00",
+  "status": "solved",
+  "tag": "company_capacities_gas24_co2_93_coal14p2_cy2009_vre_fixed"
+}
