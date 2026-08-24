@@ -62,6 +62,16 @@ class CompanyCapacityExtractionTests(unittest.TestCase):
         self.assertAlmostEqual(annual["spv"], 187.8890410958904)
         self.assertAlmostEqual(annual["lig"], 6.756136986336986)
 
+    def test_excel_company_source_is_supported(self) -> None:
+        raw, path = self.source_copy("source.xlsx")
+        raw.to_excel(path, header=False, index=False)
+
+        source = read_company_capacity_source(path, 2030)
+
+        self.assertEqual(source.country, "de")
+        self.assertEqual(len(source.monthly_gw), 12)
+        self.assertAlmostEqual(source.monthly_gw.loc["2030-01-01", "ccgt"], 19.65)
+
     def test_full_mapping_preserves_selected_baseline_ratios(self) -> None:
         source = read_company_capacity_source(SOURCE, 2030)
         capacity, battery, audit = build_company_capacity_overrides(

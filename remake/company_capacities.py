@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 
 from ._helpers import utc_now, write_json
-from .load_network import OverrideValidationError
+from .errors import OverrideValidationError
+from .input_data import read_table
 
 
 SOURCE_ROW_LABELS = ("symbol_name", "effective_date", "tag", "unit", "timezone")
@@ -103,19 +104,28 @@ def read_company_capacity_source(
         raise OverrideValidationError(
             f"Company capacity source does not exist: {source_path}"
         )
-    try:
-        raw = pd.read_csv(
+    if source_path.suffix.lower() == ".csv":
+        try:
+            raw = pd.read_csv(
+                source_path,
+                sep=";",
+                header=None,
+                dtype=str,
+                keep_default_na=False,
+                encoding="utf-8-sig",
+            )
+        except Exception as exc:
+            raise OverrideValidationError(
+                f"Could not read company capacity source {source_path}: {exc}"
+            ) from exc
+    else:
+        raw = read_table(
             source_path,
-            sep=";",
+            "company capacity source",
             header=None,
             dtype=str,
             keep_default_na=False,
-            encoding="utf-8-sig",
         )
-    except Exception as exc:
-        raise OverrideValidationError(
-            f"Could not read company capacity source {source_path}: {exc}"
-        ) from exc
 
     if raw.shape[0] < 6 or raw.shape[1] < 2:
         raise OverrideValidationError("Company capacity source has no monthly data")
@@ -172,14 +182,20 @@ def read_company_capacity_source(
     data = raw.iloc[5:].copy()
     if data.iloc[:, 0].astype(str).str.strip().eq("").any():
         raise OverrideValidationError("Company capacity source contains an empty date")
+    date_values = data.iloc[:, 0].astype(str).str.strip()
     dates = pd.to_datetime(
-        data.iloc[:, 0].astype(str).str.strip(),
-        format="%d/%m/%Y %H:%M",
+        date_values,
+        format=(
+            "%d/%m/%Y %H:%M"
+            if source_path.suffix.lower() == ".csv"
+            else "mixed"
+        ),
+        dayfirst=True,
         errors="coerce",
     )
     if dates.isna().any():
         raise OverrideValidationError(
-            "Company capacity dates must use DD/MM/YYYY HH:MM"
+            "Company capacity dates must be Excel dates or use DD/MM/YYYY HH:MM"
         )
     if dates.duplicated().any():
         raise OverrideValidationError("Company capacity dates must be unique")
@@ -245,7 +261,7 @@ def _load_base_capacities(path: Path | str, bus: str) -> tuple[pd.DataFrame, Pat
     path = Path(path).resolve()
     if not path.is_file():
         raise OverrideValidationError(f"Base capacity table does not exist: {path}")
-    base = pd.read_csv(path)
+    base = read_table(path, "base capacity table")
     required = {"bus", "index_carrier", "p_nom", "e_nom"}
     missing = sorted(required - set(base.columns))
     if missing:

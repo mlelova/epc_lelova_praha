@@ -7,10 +7,16 @@ from typing import Iterable
 
 import pandas as pd
 
-from scenarios.load_network_data_additional import load_network_data
+from .errors import OverrideValidationError
+from .input_data import (
+    HOURS_PER_YEAR,
+    apply_fuel_prices,
+    load_fixed_inputs,
+    load_hourly_input,
+    read_table,
+)
 
 
-HOURS_PER_YEAR = 8760
 PROFILE_KEYS = (
     "nuclear_profiles",
     "other_res_pmax",
@@ -25,20 +31,16 @@ PROFILE_KEYS = (
     "hydro_pondage",
     "hydro_ps_open",
 )
+VRE_CARRIERS = {
+    "wind_onshore": "onwind",
+    "wind_offshore": "offwind",
+    "solar_utility": "solar-pv-utility",
+    "solar_rooftop": "solar-pv-rooftop",
+}
 
 
-class OverrideValidationError(ValueError):
-    """Raised when an override is ambiguous or inconsistent with the base data."""
-
-
-def _read_csv(path: Path | str, label: str) -> pd.DataFrame:
-    path = Path(path)
-    if not path.is_file():
-        raise OverrideValidationError(f"{label} file does not exist: {path}")
-    try:
-        return pd.read_csv(path)
-    except Exception as exc:
-        raise OverrideValidationError(f"Could not read {label} file {path}: {exc}") from exc
+def _read_table(path: Path | str, label: str) -> pd.DataFrame:
+    return read_table(path, label)
 
 
 def _require_columns(df: pd.DataFrame, columns: Iterable[str], label: str) -> None:
@@ -57,7 +59,7 @@ def _numeric(df: pd.DataFrame, columns: Iterable[str], label: str) -> pd.DataFra
         if invalid.any():
             rows = (invalid[invalid].index + 2).tolist()[:5]
             raise OverrideValidationError(
-                f"{label}.{column} contains non-numeric values at CSV row(s) {rows}"
+                f"{label}.{column} contains non-numeric values at input row(s) {rows}"
             )
         result[column] = converted
     return result
@@ -84,7 +86,7 @@ def apply_capacity_override(data: dict, path: Path | str) -> None:
     compatibility with the scenario table. Energy may be supplied as
     ``e_nom_mwh`` or ``e_nom``.
     """
-    override = _read_csv(path, "capacity override")
+    override = _read_table(path, "capacity override")
     _require_columns(override, ["bus", "index_carrier"], "capacity override")
     if {"p_nom_mw", "p_nom"}.issubset(override.columns) or {
         "e_nom_mwh",
@@ -148,7 +150,7 @@ def apply_capacity_override(data: dict, path: Path | str) -> None:
 
 def apply_technology_override(data: dict, path: Path | str) -> None:
     """Update technology fields by either index_carrier or pypsa_carrier."""
-    override = _read_csv(path, "technology override")
+    override = _read_table(path, "technology override")
     keys = [key for key in ("index_carrier", "pypsa_carrier") if key in override]
     if len(keys) != 1:
         raise OverrideValidationError(
@@ -200,7 +202,7 @@ def read_battery_override(
     buses: set[str],
     supported_buses: set[str] | None = None,
 ) -> pd.DataFrame:
-    override = _read_csv(path, "battery override")
+    override = _read_table(path, "battery override")
     _require_columns(override, ["bus", "p_nom_mw", "duration_h"], "battery override")
     if override["bus"].duplicated().any():
         raise OverrideValidationError("battery override contains duplicate bus keys")
@@ -220,7 +222,7 @@ def read_battery_override(
 
 
 def read_ntc_override(path: Path | str, links: set[str]) -> pd.DataFrame:
-    override = _read_csv(path, "NTC override")
+    override = _read_table(path, "NTC override")
     _require_columns(override, ["link_id", "p_nom"], "NTC override")
     if override["link_id"].duplicated().any():
         raise OverrideValidationError("NTC override contains duplicate link_id keys")
@@ -241,7 +243,7 @@ def read_profile_override(
     bounded: bool = True,
 ) -> pd.DataFrame:
     """Read either a wide timestamp+bus table or long timestamp,bus,value table."""
-    raw = _read_csv(path, label)
+    raw = _read_table(path, label)
     timestamp_candidates = [
         name for name in ("snapshot", "timestamp", "datetime", "time") if name in raw
     ]
@@ -337,18 +339,12 @@ def validate_remake_data(data: dict) -> None:
             raise OverrideValidationError(f"{key} values must be within [0, 1]")
         data[key] = numeric.clip(0.0, 1.0)
 
-    vre_carriers = {
-        "wind_onshore": "onwind",
-        "wind_offshore": "offwind",
-        "solar_utility": "solar-pv-utility",
-        "solar_rooftop": "solar-pv-rooftop",
-    }
     carrier_column = (
         "pypsa_carrier" if "pypsa_carrier" in capacities else "index_carrier"
     )
     capacity_mw = pd.to_numeric(capacities["p_nom"], errors="coerce")
 
-    for profile_key, carrier in vre_carriers.items():
+    for profile_key, carrier in VRE_CARRIERS.items():
         profile = data[profile_key]
         if profile.shape[1] == 0:
             raise OverrideValidationError(f"{profile_key} contains no bus profiles")
@@ -377,33 +373,140 @@ def validate_remake_data(data: dict) -> None:
             )
 
 
+def _read_vre_override(
+    path: Path | str,
+    buses: set[str],
+) -> dict[str, pd.DataFrame]:
+    raw = _read_table(path, "VRE override")
+    _require_columns(raw, ["technology"], "VRE override")
+    unknown = set(raw["technology"].astype(str)) - set(VRE_CARRIERS)
+    if unknown:
+        raise OverrideValidationError(
+            f"Unknown VRE technology value(s): {', '.join(sorted(unknown))}"
+        )
+
+    result: dict[str, pd.DataFrame] = {}
+    for technology, group in raw.groupby("technology", sort=False):
+        timestamp = next(
+            (
+                column
+                for column in ("snapshot", "timestamp", "datetime", "time")
+                if column in group
+            ),
+            None,
+        )
+        if timestamp is None:
+            raise OverrideValidationError(
+                "VRE override requires snapshot, timestamp, datetime, or time"
+            )
+        _require_columns(group, ["bus", "p_max_pu"], "VRE override")
+        parsed = pd.to_datetime(group[timestamp], errors="coerce")
+        if parsed.isna().any():
+            raise OverrideValidationError("VRE override contains invalid timestamps")
+        prepared = group.assign(_snapshot=parsed)
+        if prepared.duplicated(["_snapshot", "bus"]).any():
+            raise OverrideValidationError(
+                f"VRE override {technology} contains duplicate timestamp,bus rows"
+            )
+        profile = prepared.pivot(
+            index="_snapshot", columns="bus", values="p_max_pu"
+        )
+        if len(profile) != HOURS_PER_YEAR:
+            raise OverrideValidationError(
+                f"VRE override {technology} must contain {HOURS_PER_YEAR} timestamps"
+            )
+        expected = pd.date_range(profile.index[0], periods=HOURS_PER_YEAR, freq="h")
+        if not profile.index.equals(expected):
+            raise OverrideValidationError(
+                f"VRE override {technology} timestamps must be contiguous hourly values"
+            )
+        _validate_known(profile.columns, buses, "VRE override bus column(s)")
+        profile = profile.apply(pd.to_numeric, errors="coerce")
+        if (
+            profile.isna().any().any()
+            or (profile < 0).any().any()
+            or (profile > 1).any().any()
+        ):
+            raise OverrideValidationError(
+                "VRE p_max_pu values must be numeric within [0, 1]"
+            )
+        result[str(technology)] = profile
+    return result
+
+
+def _merge_profile(base: pd.DataFrame, override: pd.DataFrame) -> pd.DataFrame:
+    result = base.copy()
+    for column in override.columns:
+        result[str(column)] = override[column].to_numpy()
+    return result
+
+
+def _positive_capacity_buses(data: dict, carrier: str) -> set[str]:
+    capacities = data["capacities"]
+    carrier_column = (
+        "pypsa_carrier" if "pypsa_carrier" in capacities else "index_carrier"
+    )
+    capacity_mw = pd.to_numeric(capacities["p_nom"], errors="coerce")
+    return set(
+        capacities.loc[
+            capacities[carrier_column].astype(str).eq(carrier) & capacity_mw.gt(0),
+            "bus",
+        ].astype(str)
+    )
+
+
+def _load_profile_with_override(
+    data_dir: Path | str,
+    key: str,
+    climate_year: int,
+    override: pd.DataFrame | None,
+    complete_for: set[str],
+) -> pd.DataFrame:
+    """Skip the base table when the supplied override is a complete replacement."""
+    if override is not None and complete_for and complete_for.issubset(
+        set(override.columns.astype(str))
+    ):
+        return override
+    base = load_hourly_input(data_dir, key, climate_year)
+    return base if override is None else _merge_profile(base, override)
+
+
 def load_remake_data(
     data_dir: Path | str,
-    tyndp_dir: Path | str,
     climate_year: int,
     gas_price: float | None = None,
     coal_price: float | None = None,
     co2_price: float | None = None,
     capacity_override: Path | str | None = None,
     technology_override: Path | str | None = None,
+    nuclear_profile_override: Path | str | None = None,
     demand_override: Path | str | None = None,
     vre_override: Path | str | None = None,
 ) -> dict:
-    """Load the trusted base inputs, apply overrides, and validate the result."""
-    data = load_network_data(
-        data_dir=data_dir,
-        tyndp_dir=tyndp_dir,
-        climate_year=climate_year,
-        gas_price=gas_price,
-        coal_price=coal_price,
-        co2_price=co2_price,
+    """Load CSV/Excel base inputs, apply overrides, and validate the result.
+
+    Complete demand, nuclear, or per-technology VRE overrides bypass their
+    corresponding base hourly table. Partial overrides retain and update the
+    unsupplied base columns.
+    """
+    data = load_fixed_inputs(data_dir)
+    data["technologies"] = apply_fuel_prices(
+        data["technologies"], gas_price, co2_price, coal_price
     )
+    data["climate_year"] = climate_year
+    if "Climate year start" in data["dsr_static"].columns:
+        data["dsr_static"] = data["dsr_static"][
+            data["dsr_static"]["Climate year start"].le(climate_year)
+            & data["dsr_static"]["Climate year end"].ge(climate_year)
+        ].copy()
+
     if capacity_override is not None:
         apply_capacity_override(data, capacity_override)
     if technology_override is not None:
         apply_technology_override(data, technology_override)
 
     buses = _bus_ids(data)
+    demand = None
     if demand_override is not None:
         demand = read_profile_override(
             demand_override,
@@ -413,62 +516,50 @@ def load_remake_data(
             bounded=False,
         )
         if demand.lt(0).any().any():
-            raise OverrideValidationError("demand override values must be non-negative MW")
-        updated_demand = data["electricity_demand"].copy()
-        for bus in demand.columns:
-            updated_demand[bus] = demand[bus].to_numpy()
-        data["electricity_demand"] = updated_demand
-    if vre_override is not None:
-        raw = _read_csv(vre_override, "VRE override")
-        _require_columns(raw, ["technology"], "VRE override")
-        supported = {
-            "wind_onshore",
-            "wind_offshore",
-            "solar_utility",
-            "solar_rooftop",
-        }
-        unknown = set(raw["technology"].astype(str)) - supported
-        if unknown:
             raise OverrideValidationError(
-                f"Unknown VRE technology value(s): {', '.join(sorted(unknown))}"
+                "demand override values must be non-negative MW"
             )
-        for technology, group in raw.groupby("technology", sort=False):
-            timestamp = next(
-                (c for c in ("snapshot", "timestamp", "datetime", "time") if c in group),
-                None,
-            )
-            if timestamp is None:
-                raise OverrideValidationError(
-                    "VRE override requires snapshot, timestamp, datetime, or time"
-                )
-            _require_columns(group, ["bus", "p_max_pu"], "VRE override")
-            parsed = pd.to_datetime(group[timestamp], errors="coerce")
-            if parsed.isna().any():
-                raise OverrideValidationError("VRE override contains invalid timestamps")
-            if group.assign(_snapshot=parsed).duplicated(["_snapshot", "bus"]).any():
-                raise OverrideValidationError(
-                    f"VRE override {technology} contains duplicate timestamp,bus rows"
-                )
-            profile = group.assign(_snapshot=parsed).pivot(
-                index="_snapshot", columns="bus", values="p_max_pu"
-            )
-            if len(profile) != HOURS_PER_YEAR:
-                raise OverrideValidationError(
-                    f"VRE override {technology} must contain {HOURS_PER_YEAR} timestamps"
-                )
-            expected = pd.date_range(profile.index[0], periods=HOURS_PER_YEAR, freq="h")
-            if not profile.index.equals(expected):
-                raise OverrideValidationError(
-                    f"VRE override {technology} timestamps must be contiguous hourly values"
-                )
-            _validate_known(profile.columns, buses, "VRE override bus column(s)")
-            profile = profile.apply(pd.to_numeric, errors="coerce")
-            if profile.isna().any().any() or (profile < 0).any().any() or (profile > 1).any().any():
-                raise OverrideValidationError("VRE p_max_pu values must be numeric within [0, 1]")
-            updated_profile = data[str(technology)].copy()
-            for bus in profile.columns:
-                updated_profile[bus] = profile[bus].to_numpy()
-            data[str(technology)] = updated_profile
+
+    nuclear = None
+    if nuclear_profile_override is not None:
+        nuclear = read_profile_override(
+            nuclear_profile_override,
+            "nuclear profile override",
+            buses,
+        )
+
+    vre_profiles = (
+        _read_vre_override(vre_override, buses) if vre_override is not None else {}
+    )
+
+    data["electricity_demand"] = _load_profile_with_override(
+        data_dir, "electricity_demand", climate_year, demand, buses
+    )
+    data["nuclear_profiles"] = _load_profile_with_override(
+        data_dir,
+        "nuclear_profiles",
+        climate_year,
+        nuclear,
+        _positive_capacity_buses(data, "nuclear"),
+    )
+    for key, carrier in VRE_CARRIERS.items():
+        data[key] = _load_profile_with_override(
+            data_dir,
+            key,
+            climate_year,
+            vre_profiles.get(key),
+            _positive_capacity_buses(data, carrier),
+        )
+
+    for key in (
+        "other_res_pmax",
+        "dsr_ts",
+        "hydro_ror",
+        "hydro_reservoir",
+        "hydro_pondage",
+        "hydro_ps_open",
+    ):
+        data[key] = load_hourly_input(data_dir, key, climate_year)
 
     validate_remake_data(data)
     return data

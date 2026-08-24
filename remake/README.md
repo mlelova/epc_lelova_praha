@@ -1,8 +1,10 @@
 # Single-run company-data forecast CLI
 
-`remake` is a strict company-data override layer around the trusted builders in
-`scenarios/`. It always builds one network, optionally solves it with Gurobi,
-and writes reproducibility metadata.
+`remake` is a strict company-data input layer around the trusted builder in
+`scenarios/`. Its inputs are CSV or modern Excel (`.xlsx`/`.xlsm`) tables; it
+does not read the original pipeline's preprocessed Parquet bundle. It always
+builds one network, optionally solves it with Gurobi, and writes reproducibility
+metadata.
 
 Run commands from the project root after installing `requirements.txt`.
 Python 3.10 or newer is required. The available commands are:
@@ -28,7 +30,9 @@ python -m remake extract-capacities \
   --output-dir company_data/processed
 ```
 
-The command validates the semicolon-delimited, decimal-comma source and writes:
+The command accepts either the semicolon-delimited, decimal-comma CSV source or
+an Excel workbook containing the same cell layout. It validates the source and
+writes:
 
 ```text
 company_data/processed/
@@ -86,9 +90,41 @@ python -m remake \
 ```
 
 Building without solving is the default. `--build-only` can be supplied to
-make that choice explicit. Raw TYNDP inputs default to `data/tyndp2024`; use
-`--tyndp-dir` if the downloaded dataset is elsewhere. Prepared model tables
-default to `data/open-tyndp`; change that location with `--data-dir`.
+make that choice explicit. Base inputs default to `data/open-tyndp`; change the
+location with `--input-dir` (`--data-dir` remains an alias).
+
+The input directory is a one-climate-year tabular bundle. It contains the
+topology, capacity, technology, DSR, demand, VRE, nuclear, other-renewables, and
+hydro tables. Existing names such as `electricity_demand_2030.csv` and
+`pecd_data_Wind_Onshore_2030.csv` define the file contract. Any one CSV may be
+replaced by an Excel file with the same stem, for example
+`electricity_demand_2030.xlsx`; keeping both is rejected as ambiguous. Hourly
+climate-dependent tables must contain exactly 8,760 contiguous timestamps for
+the requested `--climate-year`.
+
+```text
+buses.csv
+links.csv
+pemmdb_capacities_2030_grouped.csv
+technologies_2030.csv
+offshore_wind_capacity_by_bus.csv
+dsr_pemmdb.csv
+nuclear_p_max_pu_2030.csv
+other_res_p_max_pu.csv
+dsr_p_max_pu_timeseries.csv
+electricity_demand_2030.csv
+pecd_data_Wind_Onshore_2030.csv
+pecd_data_Wind_Offshore_2030_mapped.csv
+pecd_data_LFSolarPVUtility_2030.csv
+pecd_data_LFSolarPVRooftop_2030.csv
+hydro_inflows_tyndp_Run_of_River_2030.csv
+hydro_inflows_tyndp_Reservoir_2030.csv
+hydro_inflows_tyndp_Pondage_2030.csv
+hydro_inflows_tyndp_PS_Open_2030.csv
+```
+
+This keeps the remake independent of `data/tyndp2024/preprocessed/*.parquet`.
+The legacy multi-scenario pipeline and its analysis outputs are unchanged.
 
 The run-level controls are:
 
@@ -102,9 +138,14 @@ The run-level controls are:
 - `--threads` controls Gurobi threads when `--solve` is used (default `2`).
 - `--output-dir` changes the output root.
 
-CSV overrides are supplied with `--capacity-override`,
+CSV or Excel overrides are supplied with `--capacity-override`,
 `--technology-override`, `--battery-override`, `--ntc-override`,
 `--nuclear-profile-override`, `--demand-override`, and `--vre-override`.
+Excel inputs use the first worksheet. A complete demand override (all modeled
+buses), complete nuclear override (all positive-capacity nuclear buses), or
+complete per-technology VRE override (all positive-capacity buses for that
+technology) bypasses the corresponding base hourly file. Partial overrides
+load the base table and replace only the listed columns.
 
 Outputs are grouped under `remake/output/` by default:
 
@@ -211,7 +252,7 @@ python -m remake compare \
   --zone DE00
 ```
 
-Actual prices may be wide (`timestamp,DE00`), a single-zone file
+Actual prices may be supplied as CSV or Excel. They may be wide (`timestamp,DE00`), a single-zone file
 (`timestamp,price_eur_mwh`), or long form
 (`timestamp,zone,price_eur_mwh`). The command writes an aligned hourly CSV and
 prints observation count, MAE, RMSE, MAPE (excluding zero actuals), mean bias,

@@ -15,18 +15,17 @@ import pandas as pd
 from ._helpers import git_provenance, utc_now, write_json
 from .build_network import BuildConfig, build_single_network
 from .company_capacities import extract_company_capacities
+from .input_data import read_table
 from .load_network import (
     OverrideValidationError,
     load_remake_data,
     read_battery_override,
     read_ntc_override,
-    read_profile_override,
 )
 
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DATA_DIR = ROOT / "data" / "open-tyndp"
-DEFAULT_TYNDP_DIR = ROOT / "data" / "tyndp2024"
 DEFAULT_OUTPUT_DIR = ROOT / "remake" / "output"
 DEFAULT_COMPANY_OUTPUT_DIR = ROOT / "company_data" / "processed"
 DEFAULT_BASE_CAPACITIES = DEFAULT_DATA_DIR / "pemmdb_capacities_2030_grouped.csv"
@@ -101,8 +100,14 @@ def _add_run_arguments(parser: argparse.ArgumentParser) -> None:
     mode.add_argument("--build-only", action="store_true", help="Build but do not solve (default)")
     mode.add_argument("--solve", action="store_true", help="Solve the built network with Gurobi")
     parser.add_argument("--threads", type=_positive_int, default=2)
-    parser.add_argument("--data-dir", type=_path, default=DEFAULT_DATA_DIR)
-    parser.add_argument("--tyndp-dir", type=_path, default=DEFAULT_TYNDP_DIR)
+    parser.add_argument(
+        "--input-dir",
+        "--data-dir",
+        dest="data_dir",
+        type=_path,
+        default=DEFAULT_DATA_DIR,
+        help="CSV/Excel base-input directory (default: data/open-tyndp)",
+    )
     parser.add_argument("--output-dir", type=_path, default=DEFAULT_OUTPUT_DIR)
 
 
@@ -132,7 +137,7 @@ def make_parser() -> argparse.ArgumentParser:
         "--base-capacities",
         type=_path,
         default=DEFAULT_BASE_CAPACITIES,
-        help="Base PEMMDB grouped-capacity CSV used to derive model splits",
+        help="Base PEMMDB grouped-capacity table used to derive model splits",
     )
     extract.add_argument(
         "--output-dir",
@@ -177,13 +182,13 @@ def run_forecast(args: argparse.Namespace) -> int:
     try:
         data = load_remake_data(
             data_dir=_absolute(args.data_dir),
-            tyndp_dir=_absolute(args.tyndp_dir),
             climate_year=args.climate_year,
             gas_price=args.gas_price,
             coal_price=args.coal_price,
             co2_price=args.co2_price,
             capacity_override=args.capacity_override,
             technology_override=args.technology_override,
+            nuclear_profile_override=args.nuclear_profile_override,
             demand_override=args.demand_override,
             vre_override=args.vre_override,
         )
@@ -201,21 +206,6 @@ def run_forecast(args: argparse.Namespace) -> int:
             else None
         )
         ntc = read_ntc_override(args.ntc_override, links) if args.ntc_override else None
-        nuclear = (
-            read_profile_override(
-                args.nuclear_profile_override,
-                "nuclear profile override",
-                buses,
-            )
-            if args.nuclear_profile_override
-            else None
-        )
-        if nuclear is not None:
-            merged_nuclear = data["nuclear_profiles"].copy()
-            for bus in nuclear.columns:
-                merged_nuclear[bus] = nuclear[bus].to_numpy()
-            nuclear = merged_nuclear
-
         metadata["status"] = "building"
         write_json(metadata_path, metadata)
         build_single_network(
@@ -226,7 +216,6 @@ def run_forecast(args: argparse.Namespace) -> int:
                 load_scale=args.load_scale,
                 battery_scale=args.battery_scale,
                 battery_override_df=battery,
-                nuclear_profile_df=nuclear,
                 ntc_override_df=ntc,
                 battery_extendable=args.battery_extendable,
                 slack_cost=args.slack_cost,
@@ -260,7 +249,7 @@ def run_forecast(args: argparse.Namespace) -> int:
 def _read_actual_prices(path: Path, zone: str) -> pd.Series:
     if not path.is_file():
         raise OverrideValidationError(f"Actual-prices file does not exist: {path}")
-    actual = pd.read_csv(path)
+    actual = read_table(path, "actual-prices")
     if actual.empty:
         raise OverrideValidationError("Actual-prices file is empty")
     timestamp = next(

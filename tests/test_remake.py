@@ -18,6 +18,7 @@ from remake.load_network import (
     PROFILE_KEYS,
     apply_capacity_override,
     apply_technology_override,
+    _load_profile_with_override,
     read_battery_override,
     read_ntc_override,
     read_profile_override,
@@ -61,6 +62,11 @@ class RemakeOverrideTests(unittest.TestCase):
         frame.to_csv(path, index=False)
         return path
 
+    def xlsx(self, name: str, frame: pd.DataFrame) -> Path:
+        path = self.directory / name
+        frame.to_excel(path, index=False)
+        return path
+
     def test_capacity_override_uses_explicit_mw_column(self) -> None:
         path = self.csv(
             "capacities.csv",
@@ -82,6 +88,17 @@ class RemakeOverrideTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(OverrideValidationError, "Unknown capacity key"):
             apply_capacity_override(self.data, path)
+
+    def test_capacity_override_accepts_excel(self) -> None:
+        path = self.xlsx(
+            "capacities.xlsx",
+            pd.DataFrame(
+                {"bus": ["DE00"], "index_carrier": ["gas-ccgt"], "p_nom_mw": [456.0]}
+            ),
+        )
+        apply_capacity_override(self.data, path)
+        capacities = self.data["capacities"].set_index(["bus", "index_carrier"])
+        self.assertEqual(capacities.loc[("DE00", "gas-ccgt"), "p_nom"], 456.0)
 
     def test_technology_override_can_update_all_rows_for_pypsa_carrier(self) -> None:
         path = self.csv(
@@ -129,6 +146,7 @@ class RemakeOverrideTests(unittest.TestCase):
         base["dsr_ts"] = pd.DataFrame(
             {"DE00_Price Band 1": [0.5] * 8760}, index=snapshots
         )
+        base["dsr_static"] = pd.DataFrame()
         base["climate_year"] = 2009
 
         demand_path = self.csv(
@@ -146,9 +164,16 @@ class RemakeOverrideTests(unittest.TestCase):
                 }
             ),
         )
-        with patch("remake.load_network.load_network_data", return_value=base):
+        fixed = {key: value for key, value in base.items() if key not in PROFILE_KEYS}
+        with (
+            patch("remake.load_network.load_fixed_inputs", return_value=fixed),
+            patch(
+                "remake.load_network.load_hourly_input",
+                side_effect=lambda _directory, key, _year: base[key].copy(),
+            ),
+        ):
             result = load_remake_data(
-                "data", "tyndp", 2009,
+                "data", 2009,
                 demand_override=demand_path,
                 vre_override=vre_path,
             )
@@ -157,6 +182,20 @@ class RemakeOverrideTests(unittest.TestCase):
         self.assertEqual(result["electricity_demand"]["FR00"].iloc[0], 0.5)
         self.assertEqual(result["wind_onshore"]["DE00"].iloc[0], 0.75)
         self.assertEqual(result["wind_onshore"]["FR00"].iloc[0], 0.5)
+
+    def test_complete_profile_override_skips_base_hourly_file(self) -> None:
+        profile = pd.DataFrame(
+            {"DE00": [0.5] * 8760},
+            index=pd.date_range("2030-01-01", periods=8760, freq="h"),
+        )
+        with patch(
+            "remake.load_network.load_hourly_input",
+            side_effect=AssertionError("base profile should not be loaded"),
+        ):
+            result = _load_profile_with_override(
+                "data", "wind_onshore", 2009, profile, {"DE00"}
+            )
+        self.assertIs(result, profile)
 
 
 class RemakeVreValidationTests(unittest.TestCase):
@@ -263,6 +302,18 @@ class RemakeCliTests(unittest.TestCase):
                     "price_eur_mwh": [50.0, 60.0],
                 }
             ).to_csv(path, index=False)
+            actual = _read_actual_prices(path, "DE00")
+        self.assertEqual(actual.tolist(), [50.0, 60.0])
+
+    def test_excel_actual_price_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "actual.xlsx"
+            pd.DataFrame(
+                {
+                    "timestamp": pd.date_range("2030-01-01", periods=2, freq="h"),
+                    "DE00": [50.0, 60.0],
+                }
+            ).to_excel(path, index=False)
             actual = _read_actual_prices(path, "DE00")
         self.assertEqual(actual.tolist(), [50.0, 60.0])
 
