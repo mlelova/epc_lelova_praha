@@ -1,0 +1,737 @@
+{
+  "annual_totals": {
+    "available_energy_twh": {
+      "bio": 35.73216,
+      "btry": 100.6524,
+      "ccgt": 151.95551999999998,
+      "coal": 35.344080000000005,
+      "engine": 4.38,
+      "gas_boiler": 39.93384,
+      "geo": 0.0,
+      "gt": 27.054,
+      "hydro_ps": 0.0,
+      "hydro_res": 0.0,
+      "hydro_ror": 59.13,
+      "lig": 38.41944,
+      "nuc": 0.0,
+      "oil": 4.642800000000002,
+      "spv": 149.3904,
+      "waste": 6.792960000000001,
+      "wnd": 0.0,
+      "wnd_off": 72.64104,
+      "wnd_on": 149.16191999999998
+    },
+    "installed_capacity_annual_mean_gw": {
+      "bio": 7.610000000000001,
+      "btry": 11.489999999999998,
+      "ccgt": 19.650000000000006,
+      "coal": 6.360000000000001,
+      "engine": 0.5199999999999999,
+      "gas_boiler": 5.299999999999999,
+      "geo": 0.0,
+      "gt": 3.854931506849314,
+      "hydro_ps": 6.490000000000001,
+      "hydro_res": 0.12000000000000001,
+      "hydro_ror": 7.340000000000003,
+      "lig": 6.756136986301369,
+      "nuc": 0.0,
+      "oil": 0.5600000000000003,
+      "spv": 187.88904109589032,
+      "waste": 1.7600000000000002,
+      "wnd": 0.0,
+      "wnd_off": 23.80243835616438,
+      "wnd_on": 85.41920547945207
+    },
+    "production_reference_twh": {
+      "battery": 7.7433,
+      "coal": 8.29561,
+      "gas-ccgt": 64.87325,
+      "gas-conventional": 4.09414,
+      "gas-ocgt": 0.36046000000000006,
+      "hydro-ps": 0.0,
+      "hydro-reservoir": 0.0,
+      "hydro-ror": 13.80329,
+      "lignite": 21.29483,
+      "nuclear": 0.0,
+      "offwind": 72.64354999999999,
+      "oil-light": 1.9374900000000002,
+      "onwind": 149.16249,
+      "other-res": 41.011509999999994,
+      "solar": 149.3905
+    },
+    "vre_potential_twh": {
+      "solar_rooftop": 81.99024753249768,
+      "solar_utility": 67.40015246750232,
+      "wind_offshore": 72.64104,
+      "wind_onshore": 149.16192
+    }
+  },
+  "capacity_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/capacity_override_de00_2030.csv",
+  "clipping": {
+    "event_count": 31,
+    "events": [
+      {
+        "available_gw": 7.63,
+        "clipped_available_mw": 873.8630139999996,
+        "date": "2030-01-18",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1293435902514721,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.62,
+        "clipped_available_mw": 863.8630139999996,
+        "date": "2030-01-19",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1278634544844321,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.87,
+        "clipped_available_mw": 2113.8630139999996,
+        "date": "2030-01-20",
+        "label": "lignite",
+        "raw_p_max_pu": 1.3128804253644242,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.34,
+        "clipped_available_mw": 1583.8630139999996,
+        "date": "2030-01-21",
+        "label": "lignite",
+        "raw_p_max_pu": 1.2344332297113076,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.93,
+        "clipped_available_mw": 1173.8630139999996,
+        "date": "2030-01-22",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1737476632626702,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.26,
+        "clipped_available_mw": 1503.8630139999996,
+        "date": "2030-01-23",
+        "label": "lignite",
+        "raw_p_max_pu": 1.222592143574988,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 9.11,
+        "clipped_available_mw": 2353.8630139999996,
+        "date": "2030-01-24",
+        "label": "lignite",
+        "raw_p_max_pu": 1.3484036837733828,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 9.24,
+        "clipped_available_mw": 2483.8630139999996,
+        "date": "2030-01-25",
+        "label": "lignite",
+        "raw_p_max_pu": 1.367645448744902,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 9.07,
+        "clipped_available_mw": 2313.8630139999996,
+        "date": "2030-01-26",
+        "label": "lignite",
+        "raw_p_max_pu": 1.3424831407052231,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.86,
+        "clipped_available_mw": 2103.8630139999996,
+        "date": "2030-01-27",
+        "label": "lignite",
+        "raw_p_max_pu": 1.3114002895973844,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.62,
+        "clipped_available_mw": 1863.8630139999996,
+        "date": "2030-01-28",
+        "label": "lignite",
+        "raw_p_max_pu": 1.2758770311884258,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.31,
+        "clipped_available_mw": 553.8630139999996,
+        "date": "2030-02-04",
+        "label": "lignite",
+        "raw_p_max_pu": 1.081979245706194,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.12,
+        "clipped_available_mw": 363.86301399999957,
+        "date": "2030-02-05",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0538566661324353,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.62,
+        "clipped_available_mw": 863.8630139999996,
+        "date": "2030-02-06",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1278634544844321,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.67,
+        "clipped_available_mw": 913.8630139999996,
+        "date": "2030-02-07",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1352641333196318,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 6.95,
+        "clipped_available_mw": 193.86301399999957,
+        "date": "2030-02-08",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0286943580927563,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.41,
+        "clipped_available_mw": 653.8630139999996,
+        "date": "2030-02-12",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0967806033765934,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.52,
+        "clipped_available_mw": 763.8630139999996,
+        "date": "2030-02-13",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1130620968140328,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 8.1,
+        "clipped_available_mw": 1343.8630139999996,
+        "date": "2030-02-14",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1989099713023492,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.63,
+        "clipped_available_mw": 873.8630139999996,
+        "date": "2030-02-15",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1293435902514721,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.46,
+        "clipped_available_mw": 703.8630139999996,
+        "date": "2030-02-22",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1041812822117931,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.38,
+        "clipped_available_mw": 623.8630139999996,
+        "date": "2030-02-23",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0923401960754737,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.15,
+        "clipped_available_mw": 393.86301399999957,
+        "date": "2030-02-28",
+        "label": "lignite",
+        "raw_p_max_pu": 1.058297073433555,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.27,
+        "clipped_available_mw": 513.8630139999996,
+        "date": "2030-03-01",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0760587026380344,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 6.96,
+        "clipped_available_mw": 203.86301399999957,
+        "date": "2030-03-02",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0301744938597963,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.09,
+        "clipped_available_mw": 333.86301399999957,
+        "date": "2030-03-03",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0494162588313154,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 6.97,
+        "clipped_available_mw": 213.86301399999957,
+        "date": "2030-03-04",
+        "label": "lignite",
+        "raw_p_max_pu": 1.0316546296268363,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.01,
+        "clipped_available_mw": 253.86301399999957,
+        "date": "2030-03-07",
+        "label": "lignite",
+        "raw_p_max_pu": 1.037575172694996,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.67,
+        "clipped_available_mw": 913.8630139999996,
+        "date": "2030-03-09",
+        "label": "lignite",
+        "raw_p_max_pu": 1.1352641333196318,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 7.32,
+        "clipped_available_mw": 563.8630139999996,
+        "date": "2030-03-10",
+        "label": "lignite",
+        "raw_p_max_pu": 1.083459381473234,
+        "static_capacity_gw": 6.7561369860000005
+      },
+      {
+        "available_gw": 6.84,
+        "clipped_available_mw": 83.86301399999957,
+        "date": "2030-03-21",
+        "label": "lignite",
+        "raw_p_max_pu": 1.012412864655317,
+        "static_capacity_gw": 6.7561369860000005
+      }
+    ],
+    "total_clipped_available_mwh": 733434.0824159997
+  },
+  "created_at": "2026-08-24T09:59:54.891741+00:00",
+  "installed_capacity_crosscheck": [
+    {
+      "company_annual_mean_mw": 19650.000000000007,
+      "difference_mw": -7.275957614183426e-12,
+      "label": "ccgt",
+      "override_mw": 19650.0,
+      "source_slugs": [
+        "ccgt"
+      ],
+      "target_carriers": [
+        "gas-ccgt"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 3854.9315068493142,
+      "difference_mw": 1.5068553693708964e-07,
+      "label": "gt",
+      "override_mw": 3854.931507,
+      "source_slugs": [
+        "gt"
+      ],
+      "target_carriers": [
+        "gas-ocgt"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 6360.000000000001,
+      "difference_mw": -9.094947017729282e-13,
+      "label": "coal",
+      "override_mw": 6360.0,
+      "source_slugs": [
+        "coal"
+      ],
+      "target_carriers": [
+        "coal"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 6756.136986301369,
+      "difference_mw": -3.0136834539007396e-07,
+      "label": "lig",
+      "override_mw": 6756.136986,
+      "source_slugs": [
+        "lig"
+      ],
+      "target_carriers": [
+        "lignite"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 0.0,
+      "difference_mw": 0.0,
+      "label": "nuc",
+      "override_mw": 0.0,
+      "source_slugs": [
+        "nuc"
+      ],
+      "target_carriers": [
+        "nuclear"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 560.0000000000002,
+      "difference_mw": -2.2737367544323206e-13,
+      "label": "oil",
+      "override_mw": 560.0,
+      "source_slugs": [
+        "oil"
+      ],
+      "target_carriers": [
+        "oil-light"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 7340.000000000004,
+      "difference_mw": -3.637978807091713e-12,
+      "label": "hydro_ror",
+      "override_mw": 7340.0,
+      "source_slugs": [
+        "hydro_ror"
+      ],
+      "target_carriers": [
+        "hydro-ror-turbine"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 85419.20547945208,
+      "difference_mw": -4.52084350399673e-07,
+      "label": "wnd_on",
+      "override_mw": 85419.205479,
+      "source_slugs": [
+        "wnd_on"
+      ],
+      "target_carriers": [
+        "onwind"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 23802.43835616438,
+      "difference_mw": -1.6438207239843905e-07,
+      "label": "wnd_off",
+      "override_mw": 23802.438356,
+      "source_slugs": [
+        "wnd_off"
+      ],
+      "target_carriers": [
+        "offwind"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 9370.000000000002,
+      "difference_mw": -1.8189894035458565e-12,
+      "label": "other-res",
+      "override_mw": 9370.0,
+      "source_slugs": [
+        "bio",
+        "geo",
+        "waste"
+      ],
+      "target_carriers": [
+        "other-res"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 187889.0410958903,
+      "difference_mw": 1.0969233699142933e-07,
+      "label": "solar",
+      "override_mw": 187889.041096,
+      "source_slugs": [
+        "spv"
+      ],
+      "target_carriers": [
+        "solar-pv-utility",
+        "solar-pv-rooftop"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 5819.999999999998,
+      "difference_mw": 1.8189894035458565e-12,
+      "label": "conventional-gas",
+      "override_mw": 5820.0,
+      "source_slugs": [
+        "engine",
+        "gas_boiler"
+      ],
+      "target_carriers": [
+        "chp-gas-conventional-old-1-other-128.4eur",
+        "gas-conv"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 6490.000000000001,
+      "difference_mw": -9.094947017729282e-13,
+      "label": "pumped-hydro",
+      "override_mw": 6490.0,
+      "source_slugs": [
+        "hydro_ps"
+      ],
+      "target_carriers": [
+        "hydro-phs-turbine",
+        "hydro-phs-pure-turbine"
+      ]
+    },
+    {
+      "company_annual_mean_mw": 120.00000000000001,
+      "difference_mw": -1.4210854715202004e-14,
+      "label": "hydro-reservoir",
+      "override_mw": 120.0,
+      "source_slugs": [
+        "hydro_res"
+      ],
+      "target_carriers": [
+        "hydro-reservoir-turbine"
+      ]
+    }
+  ],
+  "mappings": {
+    "dispatchable": {
+      "ccgt": {
+        "sources": [
+          "ccgt"
+        ],
+        "target_carriers": [
+          "gas-ccgt"
+        ]
+      },
+      "coal": {
+        "sources": [
+          "coal"
+        ],
+        "target_carriers": [
+          "coal"
+        ]
+      },
+      "conventional-gas": {
+        "sources": [
+          "engine",
+          "gas_boiler"
+        ],
+        "target_carriers": [
+          "chp-gas-conventional-old-1-other-128.4eur",
+          "gas-conv"
+        ]
+      },
+      "gt": {
+        "sources": [
+          "gt"
+        ],
+        "target_carriers": [
+          "gas-ocgt"
+        ]
+      },
+      "lignite": {
+        "sources": [
+          "lig"
+        ],
+        "target_carriers": [
+          "lignite"
+        ]
+      },
+      "oil": {
+        "sources": [
+          "oil"
+        ],
+        "target_carriers": [
+          "oil-light"
+        ]
+      },
+      "other-res": {
+        "sources": [
+          "bio",
+          "geo",
+          "waste"
+        ],
+        "target_carriers": [
+          "other-res"
+        ]
+      }
+    },
+    "ignored_operational_series": [
+      "btry",
+      "hydro_ps",
+      "hydro_res",
+      "hydro_ror",
+      "nuc",
+      "wnd"
+    ],
+    "production": {
+      "battery": [
+        "btry"
+      ],
+      "coal": [
+        "coal"
+      ],
+      "gas-ccgt": [
+        "ccgt"
+      ],
+      "gas-conventional": [
+        "engine",
+        "gas_boiler"
+      ],
+      "gas-ocgt": [
+        "gt"
+      ],
+      "hydro-ps": [
+        "hydro_ps"
+      ],
+      "hydro-reservoir": [
+        "hydro_res"
+      ],
+      "hydro-ror": [
+        "hydro_ror"
+      ],
+      "lignite": [
+        "lig"
+      ],
+      "nuclear": [
+        "nuc"
+      ],
+      "offwind": [
+        "wnd_off"
+      ],
+      "oil-light": [
+        "oil"
+      ],
+      "onwind": [
+        "wnd_on"
+      ],
+      "other-res": [
+        "bio",
+        "geo",
+        "waste"
+      ],
+      "solar": [
+        "spv"
+      ]
+    },
+    "vre": {
+      "solar_rooftop": {
+        "capacity_denominator_carriers": [
+          "solar-pv-utility",
+          "solar-pv-rooftop"
+        ],
+        "source": "spv",
+        "target_carrier": "solar-pv-rooftop"
+      },
+      "solar_utility": {
+        "capacity_denominator_carriers": [
+          "solar-pv-utility",
+          "solar-pv-rooftop"
+        ],
+        "source": "spv",
+        "target_carrier": "solar-pv-utility"
+      },
+      "wind_offshore": {
+        "capacity_denominator_carriers": [
+          "offwind"
+        ],
+        "source": "wnd_off",
+        "target_carrier": "offwind"
+      },
+      "wind_onshore": {
+        "capacity_denominator_carriers": [
+          "onwind"
+        ],
+        "source": "wnd_on",
+        "target_carrier": "onwind"
+      }
+    }
+  },
+  "outputs": {
+    "audit": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/availability_override_de00_2030.audit.json",
+    "generator_availability_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/generator_availability_override_de00_2030.csv",
+    "production_reference": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/production_reference_de00_2030.csv",
+    "vre_override": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/vre_override_de00_2030.csv"
+  },
+  "selection": {
+    "bus": "DE00",
+    "climate_year_for_intraday_shape": 2009,
+    "daily_rows": 365,
+    "forecast_year": 2030,
+    "hourly_rows": 8760
+  },
+  "source": {
+    "effective_date": "2026-08-15T18:24:00",
+    "ignored_empty_symbols": [
+      "genscape/power/supply/de.pro.bl.gas.d.c",
+      "genscape/power/supply/de.pro.bl.hydro.d.c",
+      "genscape/power/supply/de.pro.coal.d.c",
+      "genscape/power/supply/de.pro.gas.d.c",
+      "genscape/power/supply/de.pro.lig.d.c",
+      "genscape/power/supply/de.pro.pl.hydro.d.c",
+      "genscape/power/supply/de.pro.pl.spv.d.c",
+      "genscape/power/supply/de.pro.pl.wnd.d.c",
+      "genscape/power/supply/de.pro.spv.d.c",
+      "genscape/power/supply/de.pro.wnd.d.c"
+    ],
+    "path": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/available_cap.csv",
+    "sha256": "414b58dba20691b1e70d9b0e8f8e9fb177504f41f30f668042a4a796cab77ee4",
+    "tag": "EPC_LT_Model",
+    "timezone": "CET"
+  },
+  "source_consistency": {
+    "availability_above_daily_installed_event_count": 6,
+    "availability_above_daily_installed_events": [
+      {
+        "available_gw": 9.11,
+        "date": "2030-01-24",
+        "excess_gw": 0.03999999999999915,
+        "installed_gw": 9.07,
+        "source_slug": "lig"
+      },
+      {
+        "available_gw": 9.24,
+        "date": "2030-01-25",
+        "excess_gw": 0.16999999999999993,
+        "installed_gw": 9.07,
+        "source_slug": "lig"
+      },
+      {
+        "available_gw": 6.24,
+        "date": "2030-11-30",
+        "excess_gw": 0.23000000000000043,
+        "installed_gw": 6.01,
+        "source_slug": "lig"
+      },
+      {
+        "available_gw": 6.34,
+        "date": "2030-12-01",
+        "excess_gw": 0.33000000000000007,
+        "installed_gw": 6.01,
+        "source_slug": "lig"
+      },
+      {
+        "available_gw": 6.2,
+        "date": "2030-12-12",
+        "excess_gw": 0.1900000000000004,
+        "installed_gw": 6.01,
+        "source_slug": "lig"
+      },
+      {
+        "available_gw": 6.09,
+        "date": "2030-12-13",
+        "excess_gw": 0.08000000000000007,
+        "installed_gw": 6.01,
+        "source_slug": "lig"
+      }
+    ]
+  },
+  "warnings": [
+    "31 daily availability target(s) exceeded the static annual-mean model capacity and were clipped to p_max_pu=1."
+  ]
+}

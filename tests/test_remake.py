@@ -281,6 +281,29 @@ class RemakeCliTests(unittest.TestCase):
         self.assertEqual(args.bus, "DE00")
         self.assertEqual(args.year, 2030)
 
+    def test_availability_commands_are_first_class_subcommands(self) -> None:
+        extraction = make_parser().parse_args(
+            _normalise_argv(
+                ["extract-availability", "--source", "company_data/available_cap.csv"]
+            )
+        )
+        self.assertEqual(extraction.command, "extract-availability")
+        self.assertEqual(extraction.climate_year, 2009)
+
+        comparison = make_parser().parse_args(
+            _normalise_argv(
+                [
+                    "compare-generation",
+                    "--solved",
+                    "solved.nc",
+                    "--reference",
+                    "production.csv",
+                ]
+            )
+        )
+        self.assertEqual(comparison.command, "compare-generation")
+        self.assertEqual(comparison.zone, "DE00")
+
     def test_comparison_metrics(self) -> None:
         aligned = pd.DataFrame(
             {

@@ -10,6 +10,7 @@ import pandas as pd
 from .errors import OverrideValidationError
 from .input_data import (
     HOURS_PER_YEAR,
+    MODEL_SNAPSHOTS,
     apply_fuel_prices,
     load_fixed_inputs,
     load_hourly_input,
@@ -469,6 +470,81 @@ def _load_profile_with_override(
         return override
     base = load_hourly_input(data_dir, key, climate_year)
     return base if override is None else _merge_profile(base, override)
+
+
+def read_generator_availability_override(
+    path: Path | str,
+    capacities: pd.DataFrame,
+) -> pd.DataFrame:
+    """Read a complete hourly p_max_pu override keyed by generator input row."""
+    override = _read_table(path, "generator availability override")
+    timestamp_columns = [
+        column for column in ("timestamp", "snapshot") if column in override
+    ]
+    if len(timestamp_columns) != 1:
+        raise OverrideValidationError(
+            "generator availability override requires exactly one timestamp column: "
+            "timestamp or snapshot"
+        )
+    timestamp_column = timestamp_columns[0]
+    required = [timestamp_column, "bus", "index_carrier", "p_max_pu"]
+    _require_columns(override, required, "generator availability override")
+    override = override[required].copy()
+    if override.empty:
+        raise OverrideValidationError("generator availability override is empty")
+    override = override.rename(columns={timestamp_column: "snapshot"})
+    override["snapshot"] = pd.to_datetime(override["snapshot"], errors="coerce")
+    if override["snapshot"].isna().any():
+        raise OverrideValidationError(
+            "generator availability override contains invalid timestamps"
+        )
+    if override.duplicated(["snapshot", "bus", "index_carrier"]).any():
+        raise OverrideValidationError(
+            "generator availability override contains duplicate timestamp,bus,index_carrier rows"
+        )
+    override["p_max_pu"] = pd.to_numeric(
+        override["p_max_pu"], errors="coerce"
+    )
+    if (
+        override["p_max_pu"].isna().any()
+        or override["p_max_pu"].lt(0).any()
+        or override["p_max_pu"].gt(1).any()
+    ):
+        raise OverrideValidationError(
+            "generator availability p_max_pu values must be numeric within [0, 1]"
+        )
+
+    capacity_mw = pd.to_numeric(capacities["p_nom"], errors="coerce")
+    known = set(
+        zip(
+            capacities.loc[capacity_mw.gt(0), "bus"].astype(str),
+            capacities.loc[capacity_mw.gt(0), "index_carrier"].astype(str),
+        )
+    )
+    supplied = set(
+        zip(
+            override["bus"].astype(str),
+            override["index_carrier"].astype(str),
+        )
+    )
+    unknown = sorted(supplied - known)
+    if unknown:
+        shown = ", ".join(f"{bus}/{carrier}" for bus, carrier in unknown[:10])
+        raise OverrideValidationError(
+            f"Unknown positive-capacity generator availability target(s): {shown}"
+        )
+
+    for (bus, carrier), group in override.groupby(
+        ["bus", "index_carrier"], sort=False
+    ):
+        timestamps = pd.DatetimeIndex(group["snapshot"].sort_values())
+        if len(timestamps) != HOURS_PER_YEAR or not timestamps.equals(MODEL_SNAPSHOTS):
+            raise OverrideValidationError(
+                f"generator availability {bus}/{carrier} must contain every 2030 hour"
+            )
+    return override.sort_values(
+        ["bus", "index_carrier", "snapshot"]
+    ).reset_index(drop=True)
 
 
 def load_remake_data(

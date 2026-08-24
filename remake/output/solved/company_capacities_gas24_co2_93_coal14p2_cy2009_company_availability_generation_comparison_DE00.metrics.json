@@ -1,0 +1,158 @@
+{
+  "by_technology": {
+    "battery": {
+      "bias_twh": -0.18217514166641707,
+      "correlation": 0.16618446018193608,
+      "mae_gwh": 11.984091731525055,
+      "model_twh": 7.561124858333583,
+      "observations": 365,
+      "reference_twh": 7.7433,
+      "rmse_gwh": 14.991528424548699
+    },
+    "coal": {
+      "bias_twh": -7.8880132347497485,
+      "correlation": 0.4689009537867324,
+      "mae_gwh": 21.61099516369794,
+      "model_twh": 0.40759676525025246,
+      "observations": 365,
+      "reference_twh": 8.29561,
+      "rmse_gwh": 32.944645513538674
+    },
+    "gas-ccgt": {
+      "bias_twh": 24.818714398542543,
+      "correlation": 0.7353819467763341,
+      "mae_gwh": 88.18644403297574,
+      "model_twh": 89.69196439854255,
+      "observations": 365,
+      "reference_twh": 64.87325,
+      "rmse_gwh": 114.74104201620422
+    },
+    "gas-conventional": {
+      "bias_twh": 17.91293403495047,
+      "correlation": 0.5925247969252305,
+      "mae_gwh": 49.48449203264686,
+      "model_twh": 22.00707403495047,
+      "observations": 365,
+      "reference_twh": 4.09414,
+      "rmse_gwh": 61.4245252513658
+    },
+    "gas-ocgt": {
+      "bias_twh": 2.5939123880277055,
+      "correlation": 0.5513050794377079,
+      "mae_gwh": 7.20704763843207,
+      "model_twh": 2.9543723880277057,
+      "observations": 365,
+      "reference_twh": 0.36046000000000006,
+      "rmse_gwh": 16.43801081923719
+    },
+    "hydro-ps": {
+      "bias_twh": 12.26542392892707,
+      "correlation": null,
+      "mae_gwh": 33.60390117514266,
+      "model_twh": 12.26542392892707,
+      "observations": 365,
+      "reference_twh": 0.0,
+      "rmse_gwh": 44.741972801879925
+    },
+    "hydro-reservoir": {
+      "bias_twh": 0.6004176355001709,
+      "correlation": null,
+      "mae_gwh": 1.6449798232881396,
+      "model_twh": 0.6004176355001709,
+      "observations": 365,
+      "reference_twh": 0.0,
+      "rmse_gwh": 1.8858969637542484
+    },
+    "hydro-ror": {
+      "bias_twh": 2.9651766113745097,
+      "correlation": 0.42680156600486024,
+      "mae_gwh": 11.304326329445738,
+      "model_twh": 16.76846661137451,
+      "observations": 365,
+      "reference_twh": 13.80329,
+      "rmse_gwh": 13.849053762041645
+    },
+    "lignite": {
+      "bias_twh": -18.344332251730485,
+      "correlation": 0.7539303154414913,
+      "mae_gwh": 50.324857069221224,
+      "model_twh": 2.950497748269515,
+      "observations": 365,
+      "reference_twh": 21.29483,
+      "rmse_gwh": 57.01842715151756
+    },
+    "nuclear": {
+      "bias_twh": 0.0,
+      "correlation": null,
+      "mae_gwh": 0.0,
+      "model_twh": 0.0,
+      "observations": 365,
+      "reference_twh": 0.0,
+      "rmse_gwh": 0.0
+    },
+    "offwind": {
+      "bias_twh": -0.11277238102741319,
+      "correlation": 0.9997848141559081,
+      "mae_gwh": 0.36282840386442194,
+      "model_twh": 72.53077761897258,
+      "observations": 365,
+      "reference_twh": 72.64354999999999,
+      "rmse_gwh": 2.2990138044600945
+    },
+    "oil-light": {
+      "bias_twh": -1.9263600000168004,
+      "correlation": 0.14823631857388486,
+      "mae_gwh": 5.277698630183014,
+      "model_twh": 0.0111299999832,
+      "observations": 365,
+      "reference_twh": 1.9374900000000002,
+      "rmse_gwh": 5.702885835244294
+    },
+    "onwind": {
+      "bias_twh": -1.0198304102177447,
+      "correlation": 0.999004129715052,
+      "mae_gwh": 2.8444119957700935,
+      "model_twh": 148.14265958978223,
+      "observations": 365,
+      "reference_twh": 149.16249,
+      "rmse_gwh": 13.25123305023532
+    },
+    "other-res": {
+      "bias_twh": -1.726852553174528,
+      "correlation": 0.6748189280746107,
+      "mae_gwh": 8.6985781969123,
+      "model_twh": 39.28465744682547,
+      "observations": 365,
+      "reference_twh": 41.011509999999994,
+      "rmse_gwh": 13.976314661819693
+    },
+    "solar": {
+      "bias_twh": -0.0020831072686950487,
+      "correlation": 0.9999999067864945,
+      "mae_gwh": 0.06724165503155165,
+      "model_twh": 149.3884168927313,
+      "observations": 365,
+      "reference_twh": 149.3905,
+      "rmse_gwh": 0.11066115050882348
+    }
+  },
+  "metrics": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009_company_availability_generation_comparison_DE00.metrics.json",
+  "output": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009_company_availability_generation_comparison_DE00.csv",
+  "overall": {
+    "bias_twh": 29.954159917470644,
+    "correlation": 0.8616894381213295,
+    "mae_gwh": 127.45354714797601,
+    "model_twh": 564.5645799174706,
+    "observations": 365,
+    "reference_twh": 534.6104200000001,
+    "rmse_gwh": 159.73168750353506
+  },
+  "reference": "/Users/michaelalelova/epc_praha/epc_lelova_praha/company_data/processed/production_reference_de00_2030.csv",
+  "solved": "/Users/michaelalelova/epc_praha/epc_lelova_praha/remake/output/solved/company_capacities_gas24_co2_93_coal14p2_cy2009_company_availability.nc",
+  "unmapped_model_generation_twh": {
+    "dsr": 51.14976609036732,
+    "hydrogen": 2.536830427912143,
+    "slack": 0.005419899797559051
+  },
+  "zone": "DE00"
+}

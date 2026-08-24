@@ -12,7 +12,9 @@ Python 3.10 or newer is required. The available commands are:
 ```text
 python -m remake run ...
 python -m remake extract-capacities ...
+python -m remake extract-availability ...
 python -m remake compare ...
+python -m remake compare-generation ...
 ```
 
 For compatibility, run options may also be passed directly as
@@ -70,6 +72,62 @@ The same invocation can be written explicitly as `python -m remake run ...`.
 
 The current importer intentionally produces one static annual capacity set;
 monthly time-varying installed capacity is not applied to the PyPSA network.
+
+## Extract company availability and production forecasts
+
+Convert the daily company supply export into the operational inputs used by a
+2030 forecast:
+
+```bash
+python -m remake extract-availability \
+  --source company_data/available_cap.csv \
+  --year 2030 \
+  --climate-year 2009 \
+  --bus DE00 \
+  --capacity-override company_data/processed/capacity_override_de00_2030.csv \
+  --output-dir company_data/processed
+```
+
+The command validates 365 consecutive CET days and the complete company
+technology set, then writes:
+
+```text
+company_data/processed/
+  vre_override_de00_2030.csv
+  generator_availability_override_de00_2030.csv
+  production_reference_de00_2030.csv
+  availability_override_de00_2030.audit.json
+```
+
+For wind and solar, the company `cap_avail` series supplies each day's target
+available energy while climate year 2009 supplies the intraday PECD shape.
+Bounded rescaling preserves the target daily mean, keeps solar at zero during
+night-time source hours, and limits every value to `[0, 1]`. Dispatchable
+availability is repeated over the 24 hours of each day. CCGT, OCGT, coal,
+lignite, and oil map directly; engine plus gas boiler map across conventional
+gas generators; biomass, geothermal, and waste map to `other-res`.
+
+The source `cap_inst` series is cross-checked against the separately extracted
+static capacity override and is not applied again. Production (`pro`) is
+normalized to daily GWh for comparison only. Pumped storage and reservoir
+availability are ignored because their 2030 source series are all zero;
+run-of-river retains its inflow profile, and battery availability of one does
+not need an override. All mapping, ignored columns, annual totals, and clipped
+values are recorded in the audit JSON.
+
+Use both generated operational overrides in the forecast:
+
+```bash
+python -m remake \
+  --tag company_availability_2030 \
+  --climate-year 2009 \
+  --capacity-override company_data/processed/capacity_override_de00_2030.csv \
+  --battery-override company_data/processed/battery_override_de00_2030.csv \
+  --vre-override company_data/processed/vre_override_de00_2030.csv \
+  --generator-availability-override \
+    company_data/processed/generator_availability_override_de00_2030.csv \
+  --solve
+```
 
 ## Run a forecast
 
@@ -141,6 +199,8 @@ The run-level controls are:
 CSV or Excel overrides are supplied with `--capacity-override`,
 `--technology-override`, `--battery-override`, `--ntc-override`,
 `--nuclear-profile-override`, `--demand-override`, and `--vre-override`.
+Dispatchable hourly availability limits use
+`--generator-availability-override`.
 Excel inputs use the first worksheet. A complete demand override (all modeled
 buses), complete nuclear override (all positive-capacity nuclear buses), or
 complete per-technology VRE override (all positive-capacity buses for that
@@ -243,6 +303,21 @@ After all overrides are applied, each wind and solar carrier must have a
 non-empty, non-zero profile for every bus where that carrier has positive
 capacity.
 
+### Generator availability
+
+Supply one complete 8,760-hour series for every listed generator target. The
+`bus,index_carrier` pair must identify an existing positive-capacity row after
+capacity overrides are applied, and `p_max_pu` must be within `[0, 1]`.
+
+```csv
+timestamp,bus,index_carrier,p_max_pu
+2030-01-01 00:00:00,DE00,gas-ccgt,0.75
+2030-01-01 01:00:00,DE00,gas-ccgt,0.75
+```
+
+The limits replace the trusted builder's default generator profiles after the
+network is assembled and before consistency checking and NetCDF export.
+
 ## Compare a solved run with actual prices
 
 ```bash
@@ -261,3 +336,19 @@ solved network as `<solved-stem>_comparison_<zone>.csv`.
 
 This price comparison is separate from the interactive two-network dashboard
 documented in [`visualisation/README.md`](../visualisation/README.md).
+
+## Compare solved generation with the company reference
+
+```bash
+python -m remake compare-generation \
+  --solved remake/output/solved/company_availability_2030.nc \
+  --reference company_data/processed/production_reference_de00_2030.csv \
+  --zone DE00
+```
+
+The command aggregates solved hourly generation and positive storage discharge
+to daily GWh. It writes an aligned daily CSV plus a `.metrics.json` report with
+annual reference and model totals, bias, daily MAE, RMSE, and correlation by
+technology and overall. DSR, hydrogen, slack, and any other model carriers
+without a company-production mapping are reported separately rather than
+silently folded into a mapped category.

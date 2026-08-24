@@ -14,12 +14,18 @@ import pandas as pd
 
 from ._helpers import git_provenance, utc_now, write_json
 from .build_network import BuildConfig, build_single_network
+from .company_availability import extract_company_availability
 from .company_capacities import extract_company_capacities
+from .generation_comparison import (
+    compare_generation,
+    read_production_reference,
+)
 from .input_data import read_table
 from .load_network import (
     OverrideValidationError,
     load_remake_data,
     read_battery_override,
+    read_generator_availability_override,
     read_ntc_override,
 )
 
@@ -29,6 +35,9 @@ DEFAULT_DATA_DIR = ROOT / "data" / "open-tyndp"
 DEFAULT_OUTPUT_DIR = ROOT / "remake" / "output"
 DEFAULT_COMPANY_OUTPUT_DIR = ROOT / "company_data" / "processed"
 DEFAULT_BASE_CAPACITIES = DEFAULT_DATA_DIR / "pemmdb_capacities_2030_grouped.csv"
+DEFAULT_CAPACITY_OVERRIDE = (
+    DEFAULT_COMPANY_OUTPUT_DIR / "capacity_override_de00_2030.csv"
+)
 TAG_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
 
@@ -89,6 +98,7 @@ def _add_run_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--nuclear-profile-override", type=_path)
     parser.add_argument("--demand-override", type=_path)
     parser.add_argument("--vre-override", type=_path)
+    parser.add_argument("--generator-availability-override", type=_path)
     parser.add_argument("--battery-extendable", action="store_true")
     parser.add_argument(
         "--slack-cost",
@@ -126,6 +136,17 @@ def make_parser() -> argparse.ArgumentParser:
     compare.add_argument("--zone", required=True)
     compare.add_argument("--output", type=_path, help="Aligned hourly output CSV")
 
+    compare_generation_parser = subparsers.add_parser(
+        "compare-generation",
+        help="Compare solved daily generation with a company production reference",
+    )
+    compare_generation_parser.add_argument("--solved", required=True, type=_path)
+    compare_generation_parser.add_argument("--reference", required=True, type=_path)
+    compare_generation_parser.add_argument("--zone", default="DE00")
+    compare_generation_parser.add_argument(
+        "--output", type=_path, help="Aligned daily output CSV"
+    )
+
     extract = subparsers.add_parser(
         "extract-capacities",
         help="Convert a company monthly capacity export to remake overrides",
@@ -140,6 +161,32 @@ def make_parser() -> argparse.ArgumentParser:
         help="Base PEMMDB grouped-capacity table used to derive model splits",
     )
     extract.add_argument(
+        "--output-dir",
+        type=_path,
+        default=DEFAULT_COMPANY_OUTPUT_DIR,
+    )
+
+    availability = subparsers.add_parser(
+        "extract-availability",
+        help="Convert a company daily supply forecast to operational overrides",
+    )
+    availability.add_argument("--source", required=True, type=_path)
+    availability.add_argument("--year", type=_year, default=2030)
+    availability.add_argument("--climate-year", type=_climate_year, default=2009)
+    availability.add_argument("--bus", default="DE00")
+    availability.add_argument(
+        "--capacity-override",
+        type=_path,
+        default=DEFAULT_CAPACITY_OVERRIDE,
+    )
+    availability.add_argument(
+        "--input-dir",
+        "--data-dir",
+        dest="data_dir",
+        type=_path,
+        default=DEFAULT_DATA_DIR,
+    )
+    availability.add_argument(
         "--output-dir",
         type=_path,
         default=DEFAULT_COMPANY_OUTPUT_DIR,
@@ -206,6 +253,14 @@ def run_forecast(args: argparse.Namespace) -> int:
             else None
         )
         ntc = read_ntc_override(args.ntc_override, links) if args.ntc_override else None
+        generator_availability = (
+            read_generator_availability_override(
+                args.generator_availability_override,
+                data["capacities"],
+            )
+            if args.generator_availability_override
+            else None
+        )
         metadata["status"] = "building"
         write_json(metadata_path, metadata)
         build_single_network(
@@ -217,6 +272,7 @@ def run_forecast(args: argparse.Namespace) -> int:
                 battery_scale=args.battery_scale,
                 battery_override_df=battery,
                 ntc_override_df=ntc,
+                generator_availability_df=generator_availability,
                 battery_extendable=args.battery_extendable,
                 slack_cost=args.slack_cost,
             ),
@@ -333,6 +389,34 @@ def compare_prices(args: argparse.Namespace) -> int:
     return 0
 
 
+def compare_generation_cli(args: argparse.Namespace) -> int:
+    import pypsa
+
+    solved = _absolute(args.solved)
+    if not solved.is_file():
+        raise OverrideValidationError(f"Solved network does not exist: {solved}")
+    reference_path = _absolute(args.reference)
+    reference = read_production_reference(reference_path, args.zone)
+    network = pypsa.Network(str(solved))
+    aligned, report = compare_generation(network, reference, args.zone)
+    output = _absolute(args.output) if args.output else solved.with_name(
+        f"{solved.stem}_generation_comparison_{args.zone}.csv"
+    )
+    metrics_path = output.with_suffix(".metrics.json")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    aligned.to_csv(output, index=False, float_format="%.8f", date_format="%Y-%m-%d")
+    payload = {
+        "solved": str(solved),
+        "reference": str(reference_path),
+        "output": str(output),
+        "metrics": str(metrics_path),
+        **report,
+    }
+    write_json(metrics_path, payload)
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    return 0
+
+
 def extract_capacities(args: argparse.Namespace) -> int:
     result = extract_company_capacities(
         source_path=_absolute(args.source),
@@ -358,11 +442,42 @@ def extract_capacities(args: argparse.Namespace) -> int:
     return 0
 
 
+def extract_availability(args: argparse.Namespace) -> int:
+    result = extract_company_availability(
+        source_path=_absolute(args.source),
+        capacity_override=_absolute(args.capacity_override),
+        data_dir=_absolute(args.data_dir),
+        output_dir=_absolute(args.output_dir),
+        bus=args.bus,
+        year=args.year,
+        climate_year=args.climate_year,
+    )
+    print(
+        json.dumps(
+            {
+                "status": "extracted",
+                "vre_override": str(result.vre_path),
+                "generator_availability_override": str(result.generator_path),
+                "production_reference": str(result.production_path),
+                "audit": str(result.audit_path),
+                "vre_rows": int(len(result.vre_override)),
+                "generator_rows": int(len(result.generator_override)),
+                "production_rows": int(len(result.production_reference)),
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def _normalise_argv(argv: list[str]) -> list[str]:
     if argv and argv[0] not in {
         "run",
         "compare",
+        "compare-generation",
         "extract-capacities",
+        "extract-availability",
         "-h",
         "--help",
     }:
@@ -379,8 +494,12 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "compare":
             return compare_prices(args)
+        if args.command == "compare-generation":
+            return compare_generation_cli(args)
         if args.command == "extract-capacities":
             return extract_capacities(args)
+        if args.command == "extract-availability":
+            return extract_availability(args)
         return run_forecast(args)
     except (
         OverrideValidationError,
